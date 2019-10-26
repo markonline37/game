@@ -22,7 +22,6 @@ const drawdistance = 5;
 const startPosX = 50;
 const startPosY = 50;
 
-// Routing
 app.use('/static', express.static(__dirname + '/static'));
 
 // Starts the server.
@@ -174,11 +173,15 @@ setInterval(function() {
 	//io.sockets.emit('state', players);
 	for(var i = 0, j = activeplayers.length; i < j; i++){
 		var temp = {
-			map: calcPlayerMap(activeplayers[i])
+			map: calcPlayerMap(activeplayers[i]),
+			player: {
+				x: activeplayers[i].x,
+				y: activeplayers[i].y
+			}
 		};
 		io.to(activeplayers[i].socket).emit('update', temp);
 	}
-}, 5000);//1000 / gamespeed);
+}, 30000);//1000 / gamespeed);
 
 //https://tylermcginnis.com/validate-email-address-javascript/
 function emailIsValid (email) {

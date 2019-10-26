@@ -2,8 +2,6 @@ window.onload = function(){
     var canvas = document.getElementById("canvas");
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    console.log(canvas.width);
-    console.log(canvas.height);
 
     window.addEventListener("resize", function(){
         canvas.width = window.innerWidth;
@@ -92,6 +90,8 @@ function emailIsValid (email) {
 socket.on('success', function(){
 	document.getElementById('login').style.display = "none";
 	document.getElementById('canvas').style.display = "block";
+    canvas = document.getElementById("canvas");
+    ctx = canvas.getContext("2d");
 });
 
 socket.on('failed new user', function(error){
@@ -122,19 +122,10 @@ socket.on('failed login', function(error){
         passwordError.innerHTML = error.password;
     }
 });
-	
 
+var canvas;
+var ctx;
 
-//socket.emit('new player');
-
-/*setInterval(function() {
-	socket.emit('movement', movement);
-}, 1000 / 60);*/
-
-/*var canvas = document.getElementById('canvas');
-canvas.width = 800;
-canvas.height = 600;
-var context = canvas.getContext('2d');*/
 socket.on('state', function(players) {
 	/*context.clearRect(0, 0, 800, 600);
 	context.fillStyle = 'green';
@@ -145,6 +136,30 @@ socket.on('state', function(players) {
 		context.fill();
 	}*/
 });
+
+var length;
+var view;
+var centrex;
+var centrey;
+var startx;
+var starty;
+var tilesize = 32;
 socket.on('update', function(data){
-    console.log(data);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    length = data.map.length;
+    view = length/2;
+    centrex = canvas.width/2;
+    centrey = canvas.height/2;
+    var positiony;
+    var positionx;
+    //var count = 0;
+    for(var i = 0; i < length; i++){
+        positiony = (centrey-(tilesize*view))+(tilesize*i);
+        for(var j = 0; j < length; j++){
+            positionx = (centrex-(tilesize*view))+(tilesize*j);
+            //console.log("tile: "+count+", x: " + positionx+", y: "+positiony+", canvas width: "+canvas.width+", canvas height: "+canvas.height);
+            //count++;
+            
+        }
+    }
 });
