@@ -1,0 +1,76 @@
+<html>
+<head>
+    <title>Idle Proto</title>
+    <style>
+        * { 
+            margin:0; 
+            padding:0; 
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+        canvas {
+            
+        }
+
+        .error {
+            color: red;
+        }
+
+        .t1{
+            text-align: left;
+        }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/static/game.js"></script>
+</head>
+<body>
+    <div id="login">
+        <form id="new-player-form">
+            <h1>Create New User</h1>
+            <table class="t1">
+                <tr>
+                    <th>Username:</th>
+                    <th><input type="text" id="new-player-name" placeholder="Enter Username..." onkeydown="submitCreateNewUser(event)"></th>
+                    <th><div class="error" id="new-player-name-error"></div></th>
+                </tr>
+                <tr>
+                    <th>Email:</th>
+                    <th><input type="text" id="new-player-email" placeholder="Enter Your Email..." onkeydown="submitCreateNewUser(event)"></th>
+                    <th><div class="error" id="new-player-email-error"></div></th>
+                </tr>
+                <tr>
+                    <th>Password:</th>
+                    <th><input type="password" id="new-player-password" placeholder="Enter Your Password..." onkeydown="submitCreateNewUser(event)"></th>
+                    <th><div class="error" id="new-player-password-error"></div></th>
+                </tr>
+                <tr>
+                    <th colspan="1.5"><button type="button" onclick="createNewUser()">Create New User</button></th>
+                    <th colspan="1.5"><div class="error" id="new-player-error"></div></th>
+                </tr>
+            </table>
+        </form>
+        <form id="returning-player">
+            <h1>Existing User</h1>
+            <table class="t1">
+                <tr>
+                    <th>Email:</th>
+                    <th><input type="text" id="returning-player-email" placeholder="Enter Email..." onkeydown="submitReturningPlayer(event)"></th>
+                    <th><div class="error" id="returning-player-email-error"></div></th>
+                </tr>
+                <tr>
+                    <th>Password:</th>
+                    <th><input type="password" id="returning-player-password" placeholder="Enter Your Password..." onkeydown="submitReturningPlayer(event)"></th>
+                    <th><div class="error" id="returning-player-password-error"></div></th>
+                </tr>
+                <tr>
+                    <th colspan="1.5"><button type="button" onclick="returningPlayer()">Login</button></th>
+                    <th colspan="1.5"></th>
+                </tr>
+            </table>
+        </form>
+    </div>
+    <canvas id="canvas"></canvas>
+</body>
+</html>
