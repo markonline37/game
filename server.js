@@ -15,10 +15,10 @@ const hasher = require('./module/hash');
 const fs = require('fs');
 const fssync = require('fs').promises;
 const file = 'storage.json';
-const unprocessedMap = 'temp.json';
+const unprocessedMap = './map/temp.json';
 const mapfile = 'map.json';
 const mapsize = 100;
-const drawdistance = 5;
+const drawdistance = 20;
 const startPosX = 50;
 const startPosY = 50;
 
@@ -35,7 +35,7 @@ server.listen(5000, function() {
 
 var allplayers = [];
 var activeplayers = [];
-var map = [];
+var map = {};
 
 //on server start populate allplayers synchronously
 populatePlayers();
@@ -172,16 +172,9 @@ io.on('connection', function(socket) {
 setInterval(function() {
 	//io.sockets.emit('state', players);
 	for(var i = 0, j = activeplayers.length; i < j; i++){
-		var temp = {
-			map: calcPlayerMap(activeplayers[i]),
-			player: {
-				x: activeplayers[i].x,
-				y: activeplayers[i].y
-			}
-		};
-		io.to(activeplayers[i].socket).emit('update', temp);
+		io.to(activeplayers[i].socket).emit('update', calcPacket(activeplayers[i]));
 	}
-}, 30000);//1000 / gamespeed);
+},1000 / gamespeed);
 
 //https://tylermcginnis.com/validate-email-address-javascript/
 function emailIsValid (email) {
@@ -199,9 +192,28 @@ function writeToFile(){
 	});
 }
 
-function calcPlayerMap(player){
-	var x = Math.floor(player.x);
-	var y = Math.floor(player.y);
+function calcPacket(input){
+	var player = {
+		map: {
+			layer1: calcPlayerMap(input.x, input.y, "layer1"),
+			layer2: calcPlayerMap(input.x, input.y, "layer2"),
+			layer3: calcPlayerMap(input.x, input.y, "layer3"),
+			layer4: calcPlayerMap(input.x, input.y, "layer4")
+		},
+		player: {
+			x: input.x,
+			y: input.y
+		},
+		enemy: {
+
+		}
+	}
+	return player;
+}
+
+function calcPlayerMap(x, y, n){
+	var x = Math.floor(x);
+	var y = Math.floor(y);
 	var calcArray = [];
 	var xmin = x - drawdistance;
 	var xmax = x + drawdistance;
@@ -210,7 +222,7 @@ function calcPlayerMap(player){
 	for(var j = ymin; j < ymax; j++){
 		var tempArray = [];
 		for(var i = xmin; i < xmax; i++){
-			tempArray.push(map[j][i]);
+			tempArray.push(map.layers[n][j][i]);
 		}
 		calcArray.push(tempArray);
 	}
@@ -251,16 +263,16 @@ function processMap(){
 		if(fs.existsSync(unprocessedMap)){
 			var temp = fs.readFileSync(unprocessedMap);
 			var tempData = JSON.parse(temp);
-			var newMap = [];
-			var j = Math.sqrt(tempData.layers[0].data.length);
-			var count = 0;
-			for(var i = 0; i < j; i++){
-				var tempArray = [];
-				for(var k = 0; k < j; k++){
-					tempArray.push(tempData.layers[0].data[count]);
-					count++;
+			var mapObj = {
+				height: tempData.height,
+				width: tempData.width,
+				tilesize: tempData.tilewidth,
+				layers: {
+					"layer1": convertMap(tempData, 0),
+					"layer2": convertMap(tempData, 1),
+					"layer3": convertMap(tempData, 2),
+					"layer4": convertMap(tempData, 3)
 				}
-				newMap.push(tempArray);
 			}
 
 			//move old map, write new map to file, delete temp
@@ -276,8 +288,7 @@ function processMap(){
 				try{
 					await fssync.mkdir('./backupmap/' + currentDate, {recursive: true});
 					await fssync.copyFile(mapfile, './backupmap/' + currentDate + "/" + mapfile);
-					await fssync.writeFile('./' + mapfile, JSON.stringify(newMap));
-					await fssync.unlink('./temp.json');
+					await fssync.writeFile('./' + mapfile, JSON.stringify(mapObj));
 					await loadMap();
 					console.log("Map Updated.");
 				}catch(err){
@@ -288,6 +299,21 @@ function processMap(){
 	}catch(err){
 		console.log("Error: "+err);
 	}
+}
+
+function convertMap(input, n){
+	var newMap = [];
+	var j = Math.sqrt(input.layers[n].data.length);
+	var count = 0;
+	for(var i = 0; i < j; i++){
+		var tempArray = [];
+		for(var k = 0; k < j; k++){
+			tempArray.push(input.layers[n].data[count]);
+			count++;
+		}
+		newMap.push(tempArray);
+	}
+	return newMap;
 }
 
 const readline = require('readline');
@@ -304,5 +330,5 @@ rl.on('SIGINT', () => {
 });
 rl.question('', (answer) => {
 	if (answer.match("processMap")) processMap();
-	if (answer.match("x")) console.log(calcPlayerMap(allplayers[0]));
+	if (answer.match("x")) console.log(calcPacket(allplayers[0]).map["layer1"]);
 });

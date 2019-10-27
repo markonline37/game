@@ -1,3 +1,6 @@
+var tiles = new Image();
+tiles.src = "/static/tiles.png";
+
 window.onload = function(){
     var canvas = document.getElementById("canvas");
     canvas.width = window.innerWidth;
@@ -146,7 +149,7 @@ var starty;
 var tilesize = 32;
 socket.on('update', function(data){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    length = data.map.length;
+    length = data.map["layer1"][0].length;
     view = length/2;
     centrex = canvas.width/2;
     centrey = canvas.height/2;
@@ -157,9 +160,15 @@ socket.on('update', function(data){
         positiony = (centrey-(tilesize*view))+(tilesize*i);
         for(var j = 0; j < length; j++){
             positionx = (centrex-(tilesize*view))+(tilesize*j);
-            //console.log("tile: "+count+", x: " + positionx+", y: "+positiony+", canvas width: "+canvas.width+", canvas height: "+canvas.height);
-            //count++;
-            
+            for(var k in data.map){
+                var temp = data.map[k][i][j];
+                if(temp !== 0){
+                    ctx.drawImage(tiles, (tilesize*temp-32), 0, tilesize, tilesize, positionx, positiony, tilesize, tilesize);
+                }
+            }
         }
     }
+    //draw player position/rotation/action
+    //draw enemie(s) position/rotation/action
+    //draw buildings position
 });
