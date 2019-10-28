@@ -174,7 +174,7 @@ setInterval(function() {
 	for(var i = 0, j = activeplayers.length; i < j; i++){
 		io.to(activeplayers[i].socket).emit('update', calcPacket(activeplayers[i]));
 	}
-},1000 / gamespeed);
+},30000);//1000 / gamespeed);
 
 //https://tylermcginnis.com/validate-email-address-javascript/
 function emailIsValid (email) {
@@ -222,7 +222,11 @@ function calcPlayerMap(x, y, n){
 	for(var j = ymin; j < ymax; j++){
 		var tempArray = [];
 		for(var i = xmin; i < xmax; i++){
-			tempArray.push(map.layers[n][j][i]);
+			if(i < 0 || i > mapsize || j < 0 || j > mapsize){
+				tempArray.push(0);
+			}else{
+				tempArray.push(map.layers[n][j][i]);
+			}
 		}
 		calcArray.push(tempArray);
 	}

@@ -155,15 +155,19 @@ socket.on('update', function(data){
     centrey = canvas.height/2;
     var positiony;
     var positionx;
-    //var count = 0;
+    var count = 0;
     for(var i = 0; i < length; i++){
         positiony = (centrey-(tilesize*view))+(tilesize*i);
         for(var j = 0; j < length; j++){
             positionx = (centrex-(tilesize*view))+(tilesize*j);
-            for(var k in data.map){
-                var temp = data.map[k][i][j];
-                if(temp !== 0){
-                    ctx.drawImage(tiles, (tilesize*temp-32), 0, tilesize, tilesize, positionx, positiony, tilesize, tilesize);
+            //only draw onscreen
+            if(positionx+tilesize >= 0 && positionx <= canvas.width && positiony+tilesize >= 0 && positiony <= canvas.height){
+                for(var k in data.map){
+                    var temp = data.map[k][i][j];
+                    if(temp !== 0){
+                        ctx.drawImage(tiles, (tilesize*temp-32), 0, tilesize, tilesize, positionx, positiony, tilesize, tilesize);
+                        count++;
+                    }
                 }
             }
         }
