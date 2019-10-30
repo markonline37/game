@@ -1,6 +1,3 @@
-var tiles = new Image();
-tiles.src = "/static/tiles.png";
-
 window.onload = function(){
     var canvas = document.getElementById("canvas");
     canvas.width = window.innerWidth;
@@ -176,3 +173,6 @@ socket.on('update', function(data){
     //draw enemie(s) position/rotation/action
     //draw buildings position
 });
+
+var tiles = new Image();
+tiles.src = "/static/tileset.png";
