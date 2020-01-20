@@ -3,9 +3,16 @@
         "username": "mark",
         "email": "markonline37@gmail.com",
         "password": "322c0434f4893e2763a1b54556e0a4ea527a270413c10242dfc1d2ddc24e9ede",
-        "socket": "a5I3jsse2oJLx7qfAAAD",
+        "socket": "ZNqXlf1mZa2_60qKAAAB",
         "gold": 0,
-        "x": 50,
-        "y": 50
+        "x": 78.37500000000071,
+        "y": 25.754999999999953,
+        "moving": false,
+        "movement": {
+            "up": false,
+            "down": false,
+            "left": false,
+            "right": false
+        }
     }
 ]

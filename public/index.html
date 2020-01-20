@@ -1,9 +1,7 @@
 <html>
 <head>
     <title>Idle Proto</title>
-    <link rel="stylesheet" type="text/css" href="/static/style.css">
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/static/game.js"></script>
+    <link rel="stylesheet" type="text/css" href="/css/style.css">
 </head>
 <body>
     <div id="login">
@@ -12,21 +10,21 @@
             <table class="t1">
                 <tr>
                     <th>Username:</th>
-                    <th><input type="text" id="new-player-name" placeholder="Enter Username..." onkeydown="submitCreateNewUser(event)"></th>
+                    <th><input type="text" id="new-player-name" placeholder="Enter Username..."></th>
                     <th><div class="error" id="new-player-name-error"></div></th>
                 </tr>
                 <tr>
                     <th>Email:</th>
-                    <th><input type="text" id="new-player-email" placeholder="Enter Your Email..." onkeydown="submitCreateNewUser(event)"></th>
+                    <th><input type="text" id="new-player-email" placeholder="Enter Your Email..."></th>
                     <th><div class="error" id="new-player-email-error"></div></th>
                 </tr>
                 <tr>
                     <th>Password:</th>
-                    <th><input type="password" id="new-player-password" placeholder="Enter Your Password..." onkeydown="submitCreateNewUser(event)"></th>
+                    <th><input type="password" id="new-player-password" placeholder="Enter Your Password..."></th>
                     <th><div class="error" id="new-player-password-error"></div></th>
                 </tr>
                 <tr>
-                    <th colspan="1.5"><button type="button" onclick="createNewUser()">Create New User</button></th>
+                    <th colspan="1.5"><button type="submit">Create New User</button></th>
                     <th colspan="1.5"><div class="error" id="new-player-error"></div></th>
                 </tr>
             </table>
@@ -36,21 +34,24 @@
             <table class="t1">
                 <tr>
                     <th>Email:</th>
-                    <th><input type="text" id="returning-player-email" placeholder="Enter Email..." onkeydown="submitReturningPlayer(event)"></th>
+                    <th><input type="text" id="returning-player-email" placeholder="Enter Email..."></th>
                     <th><div class="error" id="returning-player-email-error"></div></th>
                 </tr>
                 <tr>
                     <th>Password:</th>
-                    <th><input type="password" id="returning-player-password" placeholder="Enter Your Password..." onkeydown="submitReturningPlayer(event)"></th>
+                    <th><input type="password" id="returning-player-password" placeholder="Enter Your Password..."></th>
                     <th><div class="error" id="returning-player-password-error"></div></th>
                 </tr>
                 <tr>
-                    <th colspan="1.5"><button type="button" onclick="returningPlayer()">Login</button></th>
+                    <th colspan="1.5"><button type="submit">Login</button></th>
                     <th colspan="1.5"></th>
                 </tr>
             </table>
         </form>
     </div>
     <canvas id="canvas"></canvas>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/game.js"></script>
+    <script src="/js/player.js"></script>
 </body>
 </html>
