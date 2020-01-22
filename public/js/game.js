@@ -88,7 +88,7 @@ function action(){
     });
 }
 
-var canvas, ctx, length, view, centrex, centrey, startx, starty, positionx, positiony, startposx, startposy;
+var canvas, ctx, length, view, centrex, centrey, startx, starty, positionx, positiony, startposx, startposy, sourcex, sourcey;
 
 let toggle = true;
 socket.on('update', function(data){
@@ -97,9 +97,8 @@ socket.on('update', function(data){
         toggle = false;
     }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let theight = data.map[0].length;
-    let twidth = data.map[0][0].length;
-    view = length/2;
+    let theight = data.map["layer1"].length;
+    let twidth = data.map["layer1"][0].length;
     startposx = (Math.floor(data.player.x)-data.player.x)*tilesize;
     startposy = (Math.floor(data.player.y)-data.player.y)*tilesize;
     for(let i=0;i<theight;i++){
@@ -110,12 +109,17 @@ socket.on('update', function(data){
                 for(let k in data.map){
                     let temp = data.map[k][i][j];
                     if(temp !== 0){
-                        ctx.drawImage(tiles, (tilesize*temp-32), 0, tilesize, tilesize, positionx, positiony, tilesize, tilesize);
+                        sourcex = ((temp-1)%8)*32;
+                        sourcey = (Math.floor((temp-1)/8))*32;
+                        ctx.drawImage(tiles, sourcex, sourcey, tilesize, tilesize, positionx, positiony, tilesize, tilesize);
                     }
                 }
             }
         }
     }
+    ctx.beginPath();
+    ctx.arc(canvas.width/2,canvas.height/2,32,0, 2*Math.PI);
+    ctx.stroke();
     //draw player position/rotation/action
     //draw enemie(s) position/rotation/action
     //draw buildings position

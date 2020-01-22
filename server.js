@@ -96,6 +96,7 @@ io.on('connection', function(socket) {
 				x: startPosX,
 				y: startPosY,
 				moving: false,
+				facing: "S",
 				movement: {
 					up: false,
 					down: false,
@@ -199,48 +200,7 @@ setInterval(function() {
 	let timeDifference = currentTime - lastUpdateTime;
 	for(let i=0, j=activeplayers.length; i<j; i++){
 		let user = activeplayers[i];
-		if(user.moving){
-			let count = Object.values(user.movement).reduce((x,y)=>x+y, 0);
-			if(count === 3){
-				if(user.movement.left && user.movement.right){
-					if(user.movement.up){
-						user.y-=(movespeed*timeDifference);
-					}else{
-						user.y+=(movespeed*timeDifference);
-					}
-				}else if(user.movement.up && user.movement.down){
-					if(user.movement.left){
-						user.x-=(movespeed*timeDifference);
-					}else{
-						user.x+=(movespeed*timeDifference);
-					}
-				}
-			}else if(count === 2){
-				if(user.movement.left && user.movement.up){
-					user.x-=((movespeed/2)*timeDifference);
-					user.y-=((movespeed/2)*timeDifference);
-				}else if(user.movement.left && user.movement.down){
-					user.x-=((movespeed/2)*timeDifference);
-					user.y+=((movespeed/2)*timeDifference);
-				}else if(user.movement.right && user.movement.up){
-					user.x+=((movespeed/2)*timeDifference);
-					user.y-=((movespeed/2)*timeDifference);
-				}else if(user.movement.right && user.movement.down){
-					user.x+=((movespeed/2)*timeDifference);
-					user.y+=((movespeed/2)*timeDifference);
-				}
-			}else if(count === 1){
-				if(user.movement.left){
-					user.x-=(movespeed*timeDifference);
-				}else if(user.movement.right){
-					user.x+=(movespeed*timeDifference);
-				}else if(user.movement.up){
-					user.y-=(movespeed*timeDifference);
-				}else if(user.movement.down){
-					user.y+=(movespeed*timeDifference);
-				}
-			}
-		}
+		calcMovement(user, timeDifference);
 		let packet = calcPacket(user);
 		//if lastPacket is empty
 		if((Object.entries(lastPacket).length === 0 && lastPacket.constructor === Object)){
@@ -261,6 +221,63 @@ setInterval(function() {
 setInterval(function(){
 	backup();
 }, 300000);
+
+function calcMovement(user, timeDifference){
+	if(user.moving){
+		let count = Object.values(user.movement).reduce((x,y)=>x+y, 0);
+		if(count === 3){
+			if(user.movement.left && user.movement.right){
+				if(user.movement.up && map.layers["layer2"][Math.floor(user.y-(movespeed*timeDifference))][Math.floor(user.x)] === 0){
+					user.y-=(movespeed*timeDifference);
+					user.facing = "N";
+				}else if(user.movement.down && map.layers["layer2"][Math.floor(user.y+(movespeed*timeDifference))][Math.floor(user.x)] === 0){
+					user.y+=(movespeed*timeDifference);
+					user.facing = "S";
+				}
+			}else if(user.movement.up && user.movement.down){
+				if(user.movement.left){
+					user.x-=(movespeed*timeDifference);
+					user.facing = "W";
+				}else{
+					user.x+=(movespeed*timeDifference);
+					user.facing = "E";
+				}
+			}
+		}else if(count === 2){
+			if(user.movement.left && user.movement.up){
+				user.x-=((movespeed/2)*timeDifference);
+				user.y-=((movespeed/2)*timeDifference);
+				user.facing = "NW";
+			}else if(user.movement.left && user.movement.down){
+				user.x-=((movespeed/2)*timeDifference);
+				user.y+=((movespeed/2)*timeDifference);
+				user.facing = "SW";
+			}else if(user.movement.right && user.movement.up){
+				user.x+=((movespeed/2)*timeDifference);
+				user.y-=((movespeed/2)*timeDifference);
+				user.facing = "NW";
+			}else if(user.movement.right && user.movement.down){
+				user.x+=((movespeed/2)*timeDifference);
+				user.y+=((movespeed/2)*timeDifference);
+				user.facing = "NE";
+			}
+		}else if(count === 1){
+			if(user.movement.left){
+				user.x-=(movespeed*timeDifference);
+				user.facing = "W";
+			}else if(user.movement.right){
+				user.x+=(movespeed*timeDifference);
+				user.facing = "E";
+			}else if(user.movement.up){
+				user.y-=(movespeed*timeDifference);
+				user.facing = "N";
+			}else if(user.movement.down){
+				user.y+=(movespeed*timeDifference);
+				user.facing = "S";
+			}
+		}
+	}
+}
 
 async function backup(){
 	for(let i = 0, j = activeplayers.length; i < j; i++){
@@ -430,6 +447,9 @@ let question = function(q){
 				break;
 			case "packet":
 				console.log(calcPacket(allplayers[0]));
+				break;
+			case "map":
+				console.log("Map size: "+map.layers["layer1"].length + " X "+map.layers["layer1"][0].length);
 				break;
 			case "backup":
 				console.log("performing backup...");
