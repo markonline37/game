@@ -23,6 +23,7 @@ const horizontaldrawdistance = 40;
 const startPosX = 50;
 const startPosY = 50;
 const gamespeed = 60;
+const charactersize = 32;
 
 app.use('/', express.static(__dirname + '/public'));
 
@@ -208,8 +209,9 @@ setInterval(function() {
 			io.to(activeplayers[i].socket).emit('update', packet);
 		}else{
 			//event based - only emit to client when a packet is different than last
-			if(lastPacket[user.email] !== packet){
+			if(JSON.stringify(lastPacket[user.email]) !== JSON.stringify(packet)){
 				io.to(activeplayers[i].socket).emit('update', packet);
+				counttemp++;
 				lastPacket[user.email]=packet;
 			} 
 		}
@@ -222,56 +224,85 @@ setInterval(function(){
 	backup();
 }, 300000);
 
+//calculates player movement, also accounts for collisions.
+//gets the position of the tile where the user wants to move to based on current coordinates plus movespeed, checks to see if it is walkable.
 function calcMovement(user, timeDifference){
 	if(user.moving){
+		//count the number of movement keys pressed
 		let count = Object.values(user.movement).reduce((x,y)=>x+y, 0);
+		//since 3 are pressed and 2 directions cancel each other out, only go 1 direction
 		if(count === 3){
 			if(user.movement.left && user.movement.right){
-				if(user.movement.up && map.layers["layer2"][Math.floor(user.y-(movespeed*timeDifference))][Math.floor(user.x)] === 0){
+				//if W key is held and tile above is walkable.
+				if(user.movement.up && map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed*timeDifference))][Math.floor(user.x)] === 0){
 					user.y-=(movespeed*timeDifference);
 					user.facing = "N";
-				}else if(user.movement.down && map.layers["layer2"][Math.floor(user.y+(movespeed*timeDifference))][Math.floor(user.x)] === 0){
+				}else if(user.movement.down && map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed*timeDifference))][Math.floor(user.x)] === 0){
 					user.y+=(movespeed*timeDifference);
 					user.facing = "S";
 				}
 			}else if(user.movement.up && user.movement.down){
-				if(user.movement.left){
+				if(user.movement.left && map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x-(charactersize/100)-(movespeed*timeDifference))] === 0){
 					user.x-=(movespeed*timeDifference);
 					user.facing = "W";
-				}else{
+				}else if(user.movement.right && map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x+(charactersize/100)+(movespeed*timeDifference))] === 0){
 					user.x+=(movespeed*timeDifference);
 					user.facing = "E";
 				}
 			}
 		}else if(count === 2){
 			if(user.movement.left && user.movement.up){
-				user.x-=((movespeed/2)*timeDifference);
-				user.y-=((movespeed/2)*timeDifference);
+				if(map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed/2*timeDifference))][Math.floor(user.x-(charactersize/100)-(movespeed/2*timeDifference))] === 0){
+					user.x-=((movespeed/2)*timeDifference);
+					user.y-=((movespeed/2)*timeDifference);
+				}else if(map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x-(charactersize/100)-(movespeed/2*timeDifference))] === 0){
+					user.x-=((movespeed/2)*timeDifference);
+				}else if(map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed/2*timeDifference))][Math.floor(user.x)] === 0){
+					user.y-=((movespeed/2)*timeDifference);
+				}
 				user.facing = "NW";
 			}else if(user.movement.left && user.movement.down){
-				user.x-=((movespeed/2)*timeDifference);
-				user.y+=((movespeed/2)*timeDifference);
+				if(map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed/2*timeDifference))][Math.floor(user.x-(charactersize/100)-(movespeed/2*timeDifference))] === 0){
+					user.x-=((movespeed/2)*timeDifference);
+					user.y+=((movespeed/2)*timeDifference);
+				}else if(map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x-(charactersize/100)-(movespeed/2*timeDifference))] === 0){
+					user.x-=((movespeed/2)*timeDifference);
+				}else if(map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed/2*timeDifference))][Math.floor(user.x)] === 0){
+					user.y+=((movespeed/2)*timeDifference);
+				}
 				user.facing = "SW";
 			}else if(user.movement.right && user.movement.up){
-				user.x+=((movespeed/2)*timeDifference);
-				user.y-=((movespeed/2)*timeDifference);
-				user.facing = "NW";
-			}else if(user.movement.right && user.movement.down){
-				user.x+=((movespeed/2)*timeDifference);
-				user.y+=((movespeed/2)*timeDifference);
+				if(map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed/2*timeDifference))][Math.floor(user.x+(charactersize/100)+(movespeed/2*timeDifference))] === 0){
+					user.x+=((movespeed/2)*timeDifference);
+					user.y-=((movespeed/2)*timeDifference);
+				}else if(map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x+(charactersize/100)+(movespeed/2*timeDifference))] === 0){
+					user.x+=((movespeed/2)*timeDifference);
+				}else if(map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed/2*timeDifference))][Math.floor(user.x)] === 0){
+					user.y-=((movespeed/2)*timeDifference);
+				}
 				user.facing = "NE";
+			}else if(user.movement.right && user.movement.down){
+				if(map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed/2*timeDifference))][Math.floor(user.x+(charactersize/100)+(movespeed/2*timeDifference))] === 0){
+					user.x+=((movespeed/2)*timeDifference);
+					user.y+=((movespeed/2)*timeDifference);
+				}else if(map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x+(charactersize/100)+(movespeed/2*timeDifference))] === 0){
+					user.x+=((movespeed/2)*timeDifference);
+				}else if(map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed/2*timeDifference))][Math.floor(user.x)] === 0){
+					user.y+=((movespeed/2)*timeDifference);
+				}
+				user.facing = "SE";
 			}
 		}else if(count === 1){
-			if(user.movement.left){
+			if(user.movement.left && map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x-(charactersize/100)-(movespeed*timeDifference))] === 0){
 				user.x-=(movespeed*timeDifference);
 				user.facing = "W";
-			}else if(user.movement.right){
+			}else if(user.movement.right && map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x+(charactersize/100)+(movespeed*timeDifference))] === 0){
 				user.x+=(movespeed*timeDifference);
 				user.facing = "E";
-			}else if(user.movement.up){
+			}else if(user.movement.up && map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed*timeDifference))][Math.floor(user.x)] === 0){
 				user.y-=(movespeed*timeDifference);
 				user.facing = "N";
-			}else if(user.movement.down){
+			}else if(user.movement.down && map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed*timeDifference))][Math.floor(user.x)] === 0){
 				user.y+=(movespeed*timeDifference);
 				user.facing = "S";
 			}

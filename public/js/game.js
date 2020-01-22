@@ -88,7 +88,8 @@ function action(){
     });
 }
 
-var canvas, ctx, length, view, centrex, centrey, startx, starty, positionx, positiony, startposx, startposy, sourcex, sourcey;
+var canvas, ctx, length, horizontalview, verticalview, centrex, centrey, startx, starty, positionx, 
+    positiony, startposx, startposy, sourcex, sourcey, theight, twidth;
 
 let toggle = true;
 socket.on('update', function(data){
@@ -96,31 +97,45 @@ socket.on('update', function(data){
         console.log(data);
         toggle = false;
     }
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let theight = data.map["layer1"].length;
-    let twidth = data.map["layer1"][0].length;
-    startposx = (Math.floor(data.player.x)-data.player.x)*tilesize;
-    startposy = (Math.floor(data.player.y)-data.player.y)*tilesize;
-    for(let i=0;i<theight;i++){
-        positiony = startposy+(i*tilesize);
-        for(let j=0;j<twidth;j++){
-            positionx = startposx+(j*tilesize);
-            if(positiony > 0-tilesize && positiony < canvas.height+tilesize && positionx > 0-tilesize && positionx < canvas.width+tilesize){
-                for(let k in data.map){
-                    let temp = data.map[k][i][j];
-                    if(temp !== 0){
-                        sourcex = ((temp-1)%8)*32;
-                        sourcey = (Math.floor((temp-1)/8))*32;
-                        ctx.drawImage(tiles, sourcex, sourcey, tilesize, tilesize, positionx, positiony, tilesize, tilesize);
-                    }
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    let centrehori = canvas.width/2;
+    let centrevert = canvas.height/2;
+    
+    let horiviewdist = Math.ceil(canvas.width/2/tilesize);
+    let vertviewdist = Math.ceil(canvas.height/2/tilesize);
+
+    let startx = centrehori-(horiviewdist*tilesize);
+    let endx = centrehori+(horiviewdist*tilesize)+tilesize;
+    let starty = centrevert-(vertviewdist*tilesize);
+    let endy = centrevert+(vertviewdist*tilesize)+tilesize;
+
+    let arrhori = data.map["layer1"][0].length/2;
+    let arrvert = data.map["layer1"].length/2;
+
+    let county = 0;
+    for(let coordy = starty;coordy<endy;coordy+=tilesize){
+        let countx = 0;
+        for(let coordx = startx;coordx<endx;coordx+=tilesize){
+            for(k in data.map){
+                let y = arrvert-vertviewdist+county;
+                let x = arrhori-horiviewdist+countx;
+                let temp = data.map[k][y][x];
+                if(temp !== 0){
+                    let sourcex = ((temp-1)%8)*32;
+                    let sourcey = (Math.floor((temp-1)/8))*32;
+                    let posx = coordx+(Math.floor(data.player.x)-data.player.x)*tilesize;
+                    let posy = coordy+(Math.floor(data.player.y)-data.player.y)*tilesize
+                    ctx.drawImage(tiles, sourcex, sourcey, tilesize, tilesize, posx, posy, tilesize, tilesize);
                 }
             }
+            countx++;
         }
+        county++;
     }
-    ctx.beginPath();
-    ctx.arc(canvas.width/2,canvas.height/2,32,0, 2*Math.PI);
-    ctx.stroke();
     //draw player position/rotation/action
+    ctx.beginPath();
+    ctx.arc(canvas.width/2,canvas.height/2,16,0, 2*Math.PI);
+    ctx.stroke();
     //draw enemie(s) position/rotation/action
     //draw buildings position
 });

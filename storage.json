@@ -3,10 +3,10 @@
         "username": "mark",
         "email": "markonline37@gmail.com",
         "password": "322c0434f4893e2763a1b54556e0a4ea527a270413c10242dfc1d2ddc24e9ede",
-        "socket": "7cF3dW20JKm9fUljAAAD",
+        "socket": "jmeVGzHkR2lzOO9QAAAB",
         "gold": 0,
-        "x": 63,
-        "y": 64,
+        "x": 36.38499999999988,
+        "y": 176.06499999999807,
         "moving": false,
         "movement": {
             "up": false,
@@ -14,6 +14,6 @@
             "left": false,
             "right": false
         },
-        "facing": "E"
+        "facing": "S"
     }
 ]
