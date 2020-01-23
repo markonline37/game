@@ -141,8 +141,8 @@ socket.on('update', function(data){
     //if error, draw error.
 });
 
-document.addEventListener('keydown', function(){
+/*document.addEventListener('keydown', function(){
     if(event.code === 'KeyB'){
         socket.emit('action', "fish");
     }
-});
+});*/

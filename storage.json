@@ -3,7 +3,7 @@
         "username": "mark",
         "email": "markonline37@gmail.com",
         "password": "322c0434f4893e2763a1b54556e0a4ea527a270413c10242dfc1d2ddc24e9ede",
-        "socket": "3X9UcT_i_Uw12KwHAAAA",
+        "socket": "RchvFDgEyhrMbBB9AAAC",
         "gold": 0,
         "x": 53.884999999999884,
         "y": 53.00500000000041,
@@ -14,6 +14,57 @@
             "left": false,
             "right": false
         },
-        "facing": "S"
+        "facing": "S",
+        "action": ""
+    },
+    {
+        "username": "chris",
+        "email": "chris@gmail.com",
+        "password": "322c0434f4893e2763a1b54556e0a4ea527a270413c10242dfc1d2ddc24e9ede",
+        "socket": "",
+        "gold": 0,
+        "x": 50,
+        "y": 50,
+        "moving": false,
+        "facing": "S",
+        "movement": {
+            "up": false,
+            "down": false,
+            "left": false,
+            "right": false
+        },
+        "action": "",
+        "inventory": {
+            "slot1": "",
+            "slot2": "",
+            "slot3": "",
+            "slot4": "",
+            "slot5": "",
+            "slot6": "",
+            "slot7": "",
+            "slot8": "",
+            "slot9": "",
+            "slot10": "",
+            "slot11": "",
+            "slot12": "",
+            "slot13": "",
+            "slot14": "",
+            "slot15": "",
+            "slot16": "",
+            "slot17": "",
+            "slot18": "",
+            "slot19": "",
+            "slot20": "",
+            "slot21": "",
+            "slot22": "",
+            "slot23": "",
+            "slot24": "",
+            "slot25": "",
+            "slot26": "",
+            "slot27": "",
+            "slot28": "",
+            "slot29": "",
+            "slot30": ""
+        }
     }
 ]

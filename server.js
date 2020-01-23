@@ -10,6 +10,7 @@ app.set('port', 5000);
 
 const db = require('./module/db');
 const hasher = require('./module/hash');
+const Player = require('./module/player');
 const fs = require('fs');
 const fssync = require('fs').promises;
 const file = 'storage.json';
@@ -88,24 +89,7 @@ io.on('connection', function(socket) {
 		}
 		
 		if(!errors){
-			let player = {
-				username: data.username,
-				email: data.email,
-				password: hasher.hash(data.password),
-				socket: socket.id,
-				gold: 0,
-				x: startPosX,
-				y: startPosY,
-				moving: false,
-				facing: "S",
-				movement: {
-					up: false,
-					down: false,
-					left: false,
-					right: false
-				},
-				action: "";
-			};
+			let player = new Player(data.username, data.email, hasher.hash(data.password), socket.id, startPosX, startPosY);
 			allplayers.push(player);
 			activeplayers.push(player);
 			console.log('Player: ' + player.username + ' joined');
@@ -132,7 +116,7 @@ io.on('connection', function(socket) {
 		} else {
 			let password = "";
 			user = allplayers.find(e => e.email === data.email);
-			if(user !== null && user !== undefined){
+			if(user !== null && user !== undefined && user !== -1){
 				if(hasher.hash(data.password) !== user.password){
 					error.password = "Password doesn't match";
 					errors = true;
@@ -156,10 +140,19 @@ io.on('connection', function(socket) {
 	//on socket disconnect
 	socket.on('disconnect', function(){
 		let index = activeplayers.findIndex(e => e.socket === socket.id);
-		let temp = allplayers.findIndex(e => e.email === activeplayers[index]);
-		allplayers[temp] = activeplayers[index];
-		allplayers[temp].socket = "";
-		activeplayers.splice(index, 1);
+		if(index !== null && index !== undefined && index !== -1){
+			let temp = allplayers.findIndex(e => e.email === activeplayers[index].email);
+			if(temp !== null && temp !== undefined && temp !== -1){
+				allplayers[temp] = activeplayers[index];
+				allplayers[temp].socket = "";
+				console.log("Player: "+allplayers[temp].username+" disconnected");
+				activeplayers.splice(index, 1);
+				//if player disconnects clear last packet so they don't see a blank screen upon rejoining.
+				if(lastPacket.hasOwnProperty(allplayers[temp].email)){
+					delete lastPacket[allplayers[temp].email];
+				}
+			}
+		}
 	});
 
 	socket.on('movement', function(data){
@@ -246,7 +239,7 @@ function fishing(user){
 			tile = map.layers["layer2"][usery-1][userx-1];
 			break;
 	}
-	if(tile >== 304 && tile <== 398){
+	if(tile >= 304 && tile <= 398){
 		user.action = "fishing";
 	}
 }
