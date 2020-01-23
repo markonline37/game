@@ -138,4 +138,11 @@ socket.on('update', function(data){
     ctx.stroke();
     //draw enemie(s) position/rotation/action
     //draw buildings position
+    //if error, draw error.
+});
+
+document.addEventListener('keydown', function(){
+    if(event.code === 'KeyB'){
+        socket.emit('action', "fish");
+    }
 });

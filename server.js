@@ -103,7 +103,8 @@ io.on('connection', function(socket) {
 					down: false,
 					left: false,
 					right: false
-				}
+				},
+				action: "";
 			};
 			allplayers.push(player);
 			activeplayers.push(player);
@@ -121,42 +122,32 @@ io.on('connection', function(socket) {
 			email: false,
 			password: false
 		};
-		if(data.password.length < 8){
+		let user;
+		if(!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.email)){
+			error.email = "Email is not in a valid format";
+			errors = true;
+		}else if(data.password.length < 8){
 			error.password = "Invalid password";
 			errors = true;
 		} else {
-			let emailfound = false;
 			let password = "";
-			for(let i = 0, j = allplayers.length; i < j; i++){
-				if(allplayers[i].email === data.email){
-					emailfound = true;
-					password = allplayers[i].password;
-				}
-			}
-			//if email doesn't exist
-			if(!emailfound){
-				error.email = "Email address not found";
-				errors = true;
-			} else {
-				//if password doesn't match records
-				if(hasher.hash(data.password) != password){
+			user = allplayers.find(e => e.email === data.email);
+			if(user !== null && user !== undefined){
+				if(hasher.hash(data.password) !== user.password){
 					error.password = "Password doesn't match";
 					errors = true;
 				}
+			}else{
+				error.email = "Email address not found";
+				errors = true;
 			}
 		}
 		
 		if(!errors){
-			for(let i=0, j = allplayers.length; i<j; i++){
-				if(allplayers[i].email === data.email){
-					let player = allplayers[i];
-					player.socket = socket.id;
-					activeplayers.push(player);
-					console.log('Player: ' + player.username + ' joined');
-					socket.emit('success');
-					break;
-				}
-			}
+			user.socket = socket.id;
+			activeplayers.push(user);
+			console.log('Player: ' + user.username + ' joined');
+			socket.emit('success');
 		} else {
 			socket.emit('failed login', error);
 		}
@@ -164,31 +155,25 @@ io.on('connection', function(socket) {
 
 	//on socket disconnect
 	socket.on('disconnect', function(){
-		for(var i=0, j = activeplayers.length; i<j; i++){
-			if(activeplayers[i].socket === socket.id){
-				for(var k=0, l = allplayers.length; k<l; k++){
-					if(allplayers[k].email === activeplayers[i].email){
-						console.log('Player: ' + activeplayers[i].username + ' left');
-						allplayers[k] = activeplayers[i];
-						allplayers[k].socket = "";
-					}
-				}
-				activeplayers.splice(i, 1);
-			}
-		}
+		let index = activeplayers.findIndex(e => e.socket === socket.id);
+		let temp = allplayers.findIndex(e => e.email === activeplayers[index]);
+		allplayers[temp] = activeplayers[index];
+		allplayers[temp].socket = "";
+		activeplayers.splice(index, 1);
 	});
 
 	socket.on('movement', function(data){
-		for(let i=0, j=activeplayers.length; i<j; i++){
-			let temp = activeplayers[i];
-			if(temp.socket === socket.id){
-				temp.movement = data;
-				if(data.left === true || data.right === true || data.up === true || data.down === true){
-					temp.moving = true;
-				}else{
-					temp.moving = false;
-				}
-			}
+		let user = activeplayers.find(e => e.socket === socket.id);
+		user.movement = data;
+		user.moving = (data.left === true || data.right === true || data.up === true || data.down === true) ? true : false;
+	});
+
+	socket.on('action', function(data){
+		let user = activeplayers.find(e => e.socket === socket.id);
+		switch(data){
+			case "fish":
+				fishing(user);
+				break;
 		}
 	});
 });
@@ -201,6 +186,10 @@ setInterval(function() {
 	let timeDifference = currentTime - lastUpdateTime;
 	for(let i=0, j=activeplayers.length; i<j; i++){
 		let user = activeplayers[i];
+		if(user.action !== ""){
+			fish(user);
+			user.action = "";
+		}
 		calcMovement(user, timeDifference);
 		let packet = calcPacket(user);
 		//if lastPacket is empty
@@ -211,7 +200,6 @@ setInterval(function() {
 			//event based - only emit to client when a packet is different than last
 			if(JSON.stringify(lastPacket[user.email]) !== JSON.stringify(packet)){
 				io.to(activeplayers[i].socket).emit('update', packet);
-				counttemp++;
 				lastPacket[user.email]=packet;
 			} 
 		}
@@ -223,6 +211,45 @@ setInterval(function() {
 setInterval(function(){
 	backup();
 }, 300000);
+
+function fish(user){
+	//random number based.
+}
+
+function fishing(user){
+	let userx = Math.floor(user.x);
+	let usery = Math.floor(user.y);
+	let tile;
+	switch(user.facing){
+		case "N":
+			tile = map.layers["layer2"][usery-1][userx];
+			break;
+		case "S":
+			tile = map.layers["layer2"][usery+1][userx];
+			break
+		case "E":
+			tile = map.layers["layer2"][usery][userx+1];
+			break
+		case "W":
+			tile = map.layers["layer2"][usery][userx-1];
+			break;
+		case "NE":
+			tile = map.layers["layer2"][usery-1][userx+1];
+			break;
+		case "NW":
+			tile = map.layers["layer2"][usery-1][userx-1];
+			break;
+		case "SE":
+			tile = map.layers["layer2"][usery+1][userx+1];
+			break;
+		case "SW":
+			tile = map.layers["layer2"][usery-1][userx-1];
+			break;
+	}
+	if(tile >== 304 && tile <== 398){
+		user.action = "fishing";
+	}
+}
 
 //calculates player movement, also accounts for collisions.
 //gets the position of the tile where the user wants to move to based on current coordinates plus movespeed, checks to see if it is walkable.
