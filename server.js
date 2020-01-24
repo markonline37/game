@@ -254,24 +254,33 @@ function calcMovement(user, timeDifference){
 		if(count === 3){
 			if(user.movement.left && user.movement.right){
 				//if W key is held and tile above is walkable.
-				if(user.movement.up && map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed*timeDifference))][Math.floor(user.x)] === 0){
-					user.y-=(movespeed*timeDifference);
+				if(user.movement.up){
 					user.facing = "N";
-				}else if(user.movement.down && map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed*timeDifference))][Math.floor(user.x)] === 0){
-					user.y+=(movespeed*timeDifference);
+					if(map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed*timeDifference))][Math.floor(user.x)] === 0){
+						user.y-=(movespeed*timeDifference);
+					}
+				}else if(user.movement.down){
 					user.facing = "S";
+					if(map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed*timeDifference))][Math.floor(user.x)] === 0){
+						user.y+=(movespeed*timeDifference);
+					}
 				}
 			}else if(user.movement.up && user.movement.down){
-				if(user.movement.left && map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x-(charactersize/100)-(movespeed*timeDifference))] === 0){
-					user.x-=(movespeed*timeDifference);
+				if(user.movement.left){
 					user.facing = "W";
-				}else if(user.movement.right && map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x+(charactersize/100)+(movespeed*timeDifference))] === 0){
-					user.x+=(movespeed*timeDifference);
+					if(map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x-(charactersize/100)-(movespeed*timeDifference))] === 0){
+						user.x-=(movespeed*timeDifference);
+					}
+				}else if(user.movement.right){
 					user.facing = "E";
+					if(map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x+(charactersize/100)+(movespeed*timeDifference))] === 0){
+						user.x+=(movespeed*timeDifference);
+					}
 				}
 			}
 		}else if(count === 2){
 			if(user.movement.left && user.movement.up){
+				user.facing = "NW";
 				if(map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed/2*timeDifference))][Math.floor(user.x-(charactersize/100)-(movespeed/2*timeDifference))] === 0){
 					user.x-=((movespeed/2)*timeDifference);
 					user.y-=((movespeed/2)*timeDifference);
@@ -280,8 +289,8 @@ function calcMovement(user, timeDifference){
 				}else if(map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed/2*timeDifference))][Math.floor(user.x)] === 0){
 					user.y-=((movespeed/2)*timeDifference);
 				}
-				user.facing = "NW";
 			}else if(user.movement.left && user.movement.down){
+				user.facing = "SW";
 				if(map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed/2*timeDifference))][Math.floor(user.x-(charactersize/100)-(movespeed/2*timeDifference))] === 0){
 					user.x-=((movespeed/2)*timeDifference);
 					user.y+=((movespeed/2)*timeDifference);
@@ -290,8 +299,8 @@ function calcMovement(user, timeDifference){
 				}else if(map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed/2*timeDifference))][Math.floor(user.x)] === 0){
 					user.y+=((movespeed/2)*timeDifference);
 				}
-				user.facing = "SW";
 			}else if(user.movement.right && user.movement.up){
+				user.facing = "NE";
 				if(map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed/2*timeDifference))][Math.floor(user.x+(charactersize/100)+(movespeed/2*timeDifference))] === 0){
 					user.x+=((movespeed/2)*timeDifference);
 					user.y-=((movespeed/2)*timeDifference);
@@ -300,8 +309,8 @@ function calcMovement(user, timeDifference){
 				}else if(map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed/2*timeDifference))][Math.floor(user.x)] === 0){
 					user.y-=((movespeed/2)*timeDifference);
 				}
-				user.facing = "NE";
 			}else if(user.movement.right && user.movement.down){
+				user.facing = "SE";
 				if(map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed/2*timeDifference))][Math.floor(user.x+(charactersize/100)+(movespeed/2*timeDifference))] === 0){
 					user.x+=((movespeed/2)*timeDifference);
 					user.y+=((movespeed/2)*timeDifference);
@@ -310,21 +319,28 @@ function calcMovement(user, timeDifference){
 				}else if(map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed/2*timeDifference))][Math.floor(user.x)] === 0){
 					user.y+=((movespeed/2)*timeDifference);
 				}
-				user.facing = "SE";
 			}
 		}else if(count === 1){
-			if(user.movement.left && map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x-(charactersize/100)-(movespeed*timeDifference))] === 0){
-				user.x-=(movespeed*timeDifference);
+			if(user.movement.left){
 				user.facing = "W";
-			}else if(user.movement.right && map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x+(charactersize/100)+(movespeed*timeDifference))] === 0){
-				user.x+=(movespeed*timeDifference);
+				if(map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x-(charactersize/100)-(movespeed*timeDifference))] === 0){
+					user.x-=(movespeed*timeDifference);
+				}
+			}else if(user.movement.right){
 				user.facing = "E";
-			}else if(user.movement.up && map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed*timeDifference))][Math.floor(user.x)] === 0){
-				user.y-=(movespeed*timeDifference);
+				if(map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x+(charactersize/100)+(movespeed*timeDifference))] === 0){
+					user.x+=(movespeed*timeDifference);
+				}
+			}else if(user.movement.up){
 				user.facing = "N";
-			}else if(user.movement.down && map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed*timeDifference))][Math.floor(user.x)] === 0){
-				user.y+=(movespeed*timeDifference);
+				if(map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed*timeDifference))][Math.floor(user.x)] === 0){
+					user.y-=(movespeed*timeDifference);
+				}
+			}else if(user.movement.down){
 				user.facing = "S";
+				if(map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed*timeDifference))][Math.floor(user.x)] === 0){
+					user.y+=(movespeed*timeDifference);
+				}
 			}
 		}
 	}
@@ -352,7 +368,10 @@ function calcPacket(input){
 		},
 		player: {
 			x: input.x,
-			y: input.y
+			y: input.y,
+			inventory: input.inventory,
+			moving: input.moving,
+			facing: input.facing
 		},
 		enemy: {
 

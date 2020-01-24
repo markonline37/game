@@ -49,4 +49,38 @@ module.exports = class Player{
 			slot30: ""
 		}
 	}
+
+	addItem(item){
+		for(i in this.inventory){
+			if(i === ""){
+				i = item;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	removeItem(item){
+		for(i in this.inventory){
+			if(i === item){
+				i = "";
+				return true;
+			}
+		}
+		return false;
+	}
+
+	removeSlot(slot){
+		if(this.inventory["slot"+slot]!== ""){
+			this.inventory["slot"+slot]="";
+			return true;
+		}
+		return false;
+	}
+
+	changeSlot(oldslot, newslot){
+		let temp = this.inventory["slot"+newslot];
+		this.inventory["slot"+newslot]=this.inventory["slot"+oldslot];
+		this.inventory["slot"+oldslot]=temp;
+	}
 };

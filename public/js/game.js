@@ -4,8 +4,10 @@ const canvasheight = 1200;
 
 var socket = io();
 
-var tiles = new Image();
-tiles.src = "/image/worldtiles.png";
+var worldTiles = new Image();
+worldTiles.src = "/image/worldtiles.png";
+var char = new Image();
+char.src = "/image/char.png";
 
 /*
     uses a toggle for movement etc because it fires constantly
@@ -92,11 +94,24 @@ var canvas, ctx, length, horizontalview, verticalview, centrex, centrey, startx,
     positiony, startposx, startposy, sourcex, sourcey, theight, twidth;
 
 let toggle = true;
+let ismoving = false;
+let isfacing = "S";
+let timeidle = 0;
+let timemoving = 0;
 socket.on('update', function(data){
     if(toggle){
         console.log(data);
         toggle = false;
     }
+    ismoving = data.player.moving;
+    if(ismoving && timemoving === 0){
+        timemoving = Date.now();
+        timeidle = 0;
+    }else if(!ismoving && timemoving !== 0){
+        timemoving = 0;
+        timeidle = Date.now();
+    }
+    isfacing = data.player.facing;
     ctx.clearRect(0,0,canvas.width,canvas.height);
     let centrehori = canvas.width/2;
     let centrevert = canvas.height/2;
@@ -125,7 +140,7 @@ socket.on('update', function(data){
                     let sourcey = (Math.floor((temp-1)/8))*32;
                     let posx = coordx+(Math.floor(data.player.x)-data.player.x)*tilesize;
                     let posy = coordy+(Math.floor(data.player.y)-data.player.y)*tilesize
-                    ctx.drawImage(tiles, sourcex, sourcey, tilesize, tilesize, posx, posy, tilesize, tilesize);
+                    ctx.drawImage(worldTiles, sourcex, sourcey, tilesize, tilesize, posx, posy, tilesize, tilesize);
                 }
             }
             countx++;
@@ -133,9 +148,38 @@ socket.on('update', function(data){
         county++;
     }
     //draw player position/rotation/action
-    ctx.beginPath();
-    ctx.arc(canvas.width/2,canvas.height/2,16,0, 2*Math.PI);
-    ctx.stroke();
+    let num = 0;
+    switch(isfacing){
+        case "N":
+            num = 0;
+            break;
+        case "NE":
+            num=32;
+            break;
+        case "E":
+            num=64;
+            break;
+        case "SE":
+            num=96;
+            break;
+        case "S":
+            num=128;
+            break;
+        case "SW":
+            num=160;
+            break;
+        case "W":
+            num=192;
+            break;
+        case "NW":
+            num=224;
+            break;
+    }
+    if(ismoving){
+        ctx.drawImage(char, (((Date.now()-timemoving)%4)*tilesize), num, tilesize, tilesize, centrehori-(tilesize/2), centrevert-(tilesize/2), tilesize, tilesize);
+    }else{
+        ctx.drawImage(char, 0, num, tilesize, tilesize, centrehori-(tilesize/2), centrevert-(tilesize/2), tilesize, tilesize);
+    }
     //draw enemie(s) position/rotation/action
     //draw buildings position
     //if error, draw error.
