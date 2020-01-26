@@ -159,6 +159,9 @@ io.on('connection', function(socket) {
 		let user = activeplayers.find(e => e.socket === socket.id);
 		user.movement = data;
 		user.moving = (data.left === true || data.right === true || data.up === true || data.down === true) ? true : false;
+		if(user.moving){
+			user.action = "";
+		}
 	});
 
 	socket.on('action', function(data){
@@ -181,7 +184,6 @@ setInterval(function() {
 		let user = activeplayers[i];
 		if(user.action !== ""){
 			fish(user);
-			user.action = "";
 		}
 		calcMovement(user, timeDifference);
 		let packet = calcPacket(user);
@@ -195,6 +197,8 @@ setInterval(function() {
 				io.to(activeplayers[i].socket).emit('update', packet);
 				lastPacket[user.email]=packet;
 			} 
+			io.to(activeplayers[i].socket).emit('update', packet);
+			lastPacket[user.email]=packet;
 		}
 	}
 	lastUpdateTime = currentTime;
@@ -241,6 +245,11 @@ function fishing(user){
 	}
 	if(tile >= 304 && tile <= 398){
 		user.action = "fishing";
+		console.log("successfuly fished");
+		console.log(user.action);
+	}else{
+		console.log("failed fished");
+		user.action = "";
 	}
 }
 
@@ -371,7 +380,8 @@ function calcPacket(input){
 			y: input.y,
 			inventory: input.inventory,
 			moving: input.moving,
-			facing: input.facing
+			facing: input.facing,
+			action: input.action
 		},
 		enemy: {
 
@@ -409,9 +419,15 @@ async function populatePlayers(){
 	if(data.length > 2){
 		allplayers = JSON.parse(data);
 		console.log("Loading Players Done.");
-		//incase of crash and restored backup - reset the sockets.
+		//incase of crash and restored backup - reset the properties.
 		for(let i = 0, j = allplayers.length; i < j; i++){
 			allplayers[i].socket = "";
+			allplayers[i].action = "";
+			allplayers[i].moving = false;
+			allplayers[i].movement.up = false;
+			allplayers[i].movement.right = false;
+			allplayers[i].movement.down = false;
+			allplayers[i].movement.left = false;
 		}
 	} else {
 		console.log("Players is empty");

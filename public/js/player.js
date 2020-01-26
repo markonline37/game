@@ -17,6 +17,16 @@ function windowResize(){
             canvas.height = canvasheight;
         }
     }
+
+    centrehori = canvas.width/2;
+    centrevert = canvas.height/2;
+    horiviewdist = Math.ceil(canvas.width/2/tilesize);
+    vertviewdist = Math.ceil(canvas.height/2/tilesize);
+
+    startx = centrehori-(horiviewdist*tilesize);
+    endx = centrehori+(horiviewdist*tilesize)+tilesize;
+    starty = centrevert-(vertviewdist*tilesize);
+    endy = centrevert+(vertviewdist*tilesize)+tilesize;
 }
 
 document.getElementById('new-player-form').addEventListener('submit', newPlayer);
