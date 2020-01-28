@@ -28,7 +28,6 @@ function action(){
             movement.left = true;
             socket.emit('movement', movement);
             movelefttoggle = false;
-            clearInterval(fishing);
         }
     });
     document.addEventListener('keyup', function(){
@@ -46,7 +45,6 @@ function action(){
             movement.up = true;
             socket.emit('movement', movement);
             moveuptoggle = false;
-            clearInterval(fishing);
         }
     });
     document.addEventListener('keyup', function(){
@@ -64,7 +62,6 @@ function action(){
             movement.right = true;
             socket.emit('movement', movement);
             moverighttoggle = false;
-            clearInterval(fishing);
         }
     });
     document.addEventListener('keyup', function(){
@@ -82,7 +79,6 @@ function action(){
             movement.down = true;
             socket.emit('movement', movement);
             movedowntoggle = false;
-            clearInterval(fishing);
         }
     });
     document.addEventListener('keyup', function(){
@@ -128,10 +124,10 @@ socket.on('update', function(data){
     }
     if(isfishing === false && data.player.action === "fishing"){
         isfishing = true;
+        timefishing = Date.now();
     }else if(isfishing === true && data.player.action === ""){
         isfishing = false;
         timefishing = 0;
-        clearInterval(fishing);
     }
     
     arrhori = data.map["layer1"][0].length/2;
@@ -140,7 +136,7 @@ socket.on('update', function(data){
     drawMap(data.map, data.player.x, data.player.y);
 
     //draw player sprite - direction/action
-    drawPlayer(data.player, data.map);
+    drawPlayer(data.player);
     //draw enemie(s) position/rotation/action
     //draw buildings position
     //if error, draw error.
@@ -170,93 +166,42 @@ function drawMap(map, inx, iny){
     }
 }
 
-//fishing animation
-let fishing;
-function drawFishing(data, map){
-    setTimeout(() => {
-        drawMap(map, data.x, data.y);
-        ctx.drawImage(char, 0, 512, tilesize*6, tilesize*6, centrehori-(tilesize*3), centrevert-(tilesize*4), tilesize*6, tilesize*6);
-        ctx.drawImage(char, 0, 1280, tilesize*6, tilesize*6, centrehori-(tilesize*3), centrevert-(tilesize*4), tilesize*6, tilesize*6);
-    }, 166);
-    setTimeout(() => {
-        drawMap(map, data.x, data.y);
-        ctx.drawImage(char, 192, 512, tilesize*6, tilesize*6, centrehori-(tilesize*3), centrevert-(tilesize*4), tilesize*6, tilesize*6);
-        ctx.drawImage(char, 192, 1280, tilesize*6, tilesize*6, centrehori-(tilesize*3), centrevert-(tilesize*4), tilesize*6, tilesize*6);
-    }, 166*2);
-    setTimeout(() => {
-        drawMap(map, data.x, data.y);
-        ctx.drawImage(char, 384, 512, tilesize*6, tilesize*6, centrehori-(tilesize*3), centrevert-(tilesize*4), tilesize*6, tilesize*6);
-        ctx.drawImage(char, 384, 1280, tilesize*6, tilesize*6, centrehori-(tilesize*3), centrevert-(tilesize*4), tilesize*6, tilesize*6);
-    }, 166*3);
-    setTimeout(() => {
-        drawMap(map, data.x, data.y);
-        ctx.drawImage(char, 576, 512, tilesize*6, tilesize*6, centrehori-(tilesize*3), centrevert-(tilesize*4), tilesize*6, tilesize*6);
-        ctx.drawImage(char, 576, 1280, tilesize*6, tilesize*6, centrehori-(tilesize*3), centrevert-(tilesize*4), tilesize*6, tilesize*6);
-    }, 166*4);
-    setTimeout(() => {
-        drawMap(map, data.x, data.y);
-        ctx.drawImage(char, 768, 512, tilesize*6, tilesize*6, centrehori-(tilesize*3), centrevert-(tilesize*4), tilesize*6, tilesize*6);
-        ctx.drawImage(char, 768, 1280, tilesize*6, tilesize*6, centrehori-(tilesize*3), centrevert-(tilesize*4), tilesize*6, tilesize*6);
-    }, 166*5);
-    setTimeout(() => {
-        drawMap(map, data.x, data.y);
-        ctx.drawImage(char, 960, 512, tilesize*6, tilesize*6, centrehori-(tilesize*3), centrevert-(tilesize*4), tilesize*6, tilesize*6);
-        ctx.drawImage(char, 960, 1280, tilesize*6, tilesize*6, centrehori-(tilesize*3), centrevert-(tilesize*4), tilesize*6, tilesize*6);
-    }, 166*6);
-    setTimeout(() => {
-        fishing = setInterval(() => {
-            drawMap(map, data.x, data.y);
-            ctx.drawImage(char, 768, 512, tilesize*6, tilesize*6, centrehori-(tilesize*3), centrevert-(tilesize*4), tilesize*6, tilesize*6);
-            ctx.drawImage(char, 768, 1280, tilesize*6, tilesize*6, centrehori-(tilesize*3), centrevert-(tilesize*4), tilesize*6, tilesize*6);
-            setTimeout(() => {
-                drawMap();
-                ctx.drawImage(char, 960, 512, tilesize*6, tilesize*6, centrehori-(tilesize*3), centrevert-(tilesize*4), tilesize*6, tilesize*6);
-                ctx.drawImage(char, 960, 1280, tilesize*6, tilesize*6, centrehori-(tilesize*3), centrevert-(tilesize*4), tilesize*6, tilesize*6);
-            }, 166);
-        }, 1000);
-    }, 166*7);
-    
-}
-
-function drawPlayer(data, map){
+function drawPlayer(data){
     if(data.moving){
+        let num;
         if(data.facing === "N"){
-            ctx.drawImage(char, ((Date.now()-timemoving)%9)*tilesize*2, 256, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
-        }else if(data.facing === "NE"){
-            ctx.drawImage(char, ((Date.now()-timemoving)%9)*tilesize*2, 320, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
-        }else if(data.facing === "E"){
-            ctx.drawImage(char, ((Date.now()-timemoving)%9)*tilesize*2, 320, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
-        }else if(data.facing === "SE"){
-            ctx.drawImage(char, ((Date.now()-timemoving)%9)*tilesize*2, 320, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
+            num = 256;
+        }else if(data.facing === "NE" || data.facing === "E" || data.facing === "SE"){
+            num = 320;
         }else if(data.facing === "S"){
-            ctx.drawImage(char, ((Date.now()-timemoving)%9)*tilesize*2, 384, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
-        }else if(data.facing === "SW"){
-            ctx.drawImage(char, ((Date.now()-timemoving)%9)*tilesize*2, 448, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
-        }else if(data.facing === "W"){
-            ctx.drawImage(char, ((Date.now()-timemoving)%9)*tilesize*2, 448, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
-        }else if(data.facing === "NW"){
-            ctx.drawImage(char, ((Date.now()-timemoving)%9)*tilesize*2, 448, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
+            num = 384;
+        }else if(data.facing === "SW" || data.facing === "W" || data.facing === "NW"){
+            num = 448
         }
+        ctx.drawImage(char, ((Date.now()-timemoving)%9)*tilesize*2, num, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
     }else if(data.action === "fishing"){
-        drawFishing(data, map);
-    }else{
-        if(data.facing === "N"){
-            ctx.drawImage(char, 0, 0, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
-        }else if(data.facing === "NE"){
-            ctx.drawImage(char, 0, 64, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
-        }else if(data.facing === "E"){
-            ctx.drawImage(char, 0, 64, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
-        }else if(data.facing === "SE"){
-            ctx.drawImage(char, 0, 64, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
-        }else if(data.facing === "S"){
-            ctx.drawImage(char, 0, 128, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
-        }else if(data.facing === "SW"){
-            ctx.drawImage(char, 0, 192, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
-        }else if(data.facing === "W"){
-            ctx.drawImage(char, 0, 192, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
-        }else if(data.facing === "NW"){
-            ctx.drawImage(char, 0, 192, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
+        let num1 = ((Date.now()-timefishing)%8)*tilesize*2;
+        let num2;
+        if(Date.now()-timefishing < 1000/60*8 ){
+            //starting fishing
+            num2 = 512;
+        }else{
+            //fishing loop
+            num2 = 576;
         }
+        ctx.drawImage(char, num1, num2, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
+    }else{
+        let num;
+        if(data.facing === "N"){
+            num = 0;
+        }else if(data.facing === "NE" || data.facing === "E" || data.facing === "SE"){
+            num = 64;
+        }else if(data.facing === "S"){
+            num = 128;
+        }else if(data.facing === "SW" || data.facing === "W" || data.facing === "NW"){
+            num = 192;
+        }
+        ctx.drawImage(char, 0, num, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
     }
 }
 

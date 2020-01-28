@@ -3,35 +3,29 @@
         "username": "mark",
         "email": "markonline37@gmail.com",
         "password": "322c0434f4893e2763a1b54556e0a4ea527a270413c10242dfc1d2ddc24e9ede",
-        "socket": "3kueS1r05uFeQaG2AAAB",
+        "socket": "JNrFKntZI1EaHdaFAAAB",
         "gold": 0,
-        "x": 46.335000000000086,
-        "y": 65.61000000000028,
+        "x": 47.165000000000056,
+        "y": 49.41499999999999,
         "moving": false,
+        "horizontaldraw": 40,
+        "verticaldraw": 40,
+        "charactersize": 32,
+        "movespeed": 0.01,
+        "facing": "N",
         "movement": {
             "up": false,
             "down": false,
             "left": false,
             "right": false
         },
-        "facing": "S",
-        "action": ""
-    },
-    {
-        "username": "chris",
-        "email": "chris@gmail.com",
-        "password": "322c0434f4893e2763a1b54556e0a4ea527a270413c10242dfc1d2ddc24e9ede",
-        "socket": "",
-        "gold": 0,
-        "x": 50,
-        "y": 50,
-        "moving": false,
-        "facing": "S",
-        "movement": {
-            "up": false,
-            "down": false,
-            "left": false,
-            "right": false
+        "xp": {
+            "fishing": 0,
+            "woodcutting": 0
+        },
+        "skills": {
+            "fishing": 0,
+            "woodcutting": 0
         },
         "action": "",
         "inventory": {
@@ -65,6 +59,29 @@
             "slot28": "",
             "slot29": "",
             "slot30": ""
+        },
+        "maxlevel": 20,
+        "levelTable": {
+            "1": 100,
+            "2": 210,
+            "3": 332,
+            "4": 468,
+            "5": 622,
+            "6": 798,
+            "7": 1033,
+            "8": 1268,
+            "9": 1542,
+            "10": 1866,
+            "11": 2252,
+            "12": 2715,
+            "13": 3275,
+            "14": 3958,
+            "15": 4799,
+            "16": 5842,
+            "17": 7145,
+            "18": 8787,
+            "19": 10873,
+            "20": 13543
         }
     }
 ]

@@ -11,6 +11,8 @@ app.set('port', 5000);
 const db = require('./module/db');
 const hasher = require('./module/hash');
 const Player = require('./module/player');
+const Fishing = require('./module/fishing');
+const fishingObj = new Fishing();
 const fs = require('fs');
 const fssync = require('fs').promises;
 const file = 'storage.json';
@@ -89,7 +91,8 @@ io.on('connection', function(socket) {
 		}
 		
 		if(!errors){
-			let player = new Player(data.username, data.email, hasher.hash(data.password), socket.id, startPosX, startPosY);
+			let player = new Player(data.username, data.email, hasher.hash(data.password), socket.id, startPosX, startPosY, 
+				charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance);
 			allplayers.push(player);
 			activeplayers.push(player);
 			console.log('Player: ' + player.username + ' joined');
@@ -168,7 +171,10 @@ io.on('connection', function(socket) {
 		let user = activeplayers.find(e => e.socket === socket.id);
 		switch(data){
 			case "fish":
-				fishing(user);
+				let temp = user.actionFishing(map)
+				if(typeof temp === 'string' || temp instanceof String){
+					emitGameError(socket, temp);
+				}
 				break;
 		}
 	});
@@ -183,11 +189,16 @@ setInterval(function() {
 	for(let i=0, j=activeplayers.length; i<j; i++){
 		let user = activeplayers[i];
 		if(user.action !== ""){
-			fish(user);
+			if(user.action === "fishing"){
+				let temp = user.tickFish(fishingObj);
+				if(typeof temp === 'string' || temp instanceof String){
+					emitGameError(socket, temp);
+				}
+			}
 		}
-		calcMovement(user, timeDifference);
-		let packet = calcPacket(user);
-		//if lastPacket is empty
+		user.calcMovement(map, timeDifference);
+		let packet = user.calcPacket(map);
+		/*//if lastPacket is empty
 		if((Object.entries(lastPacket).length === 0 && lastPacket.constructor === Object)){
 			lastPacket[user.email]=packet;
 			io.to(activeplayers[i].socket).emit('update', packet);
@@ -196,10 +207,12 @@ setInterval(function() {
 			if(JSON.stringify(lastPacket[user.email]) !== JSON.stringify(packet)){
 				io.to(activeplayers[i].socket).emit('update', packet);
 				lastPacket[user.email]=packet;
-			} 
+			}
 			io.to(activeplayers[i].socket).emit('update', packet);
 			lastPacket[user.email]=packet;
-		}
+		}*/
+		io.to(activeplayers[i].socket).emit('update', packet);
+		lastPacket[user.email]=packet;
 	}
 	lastUpdateTime = currentTime;
 }, 1000 / gamespeed);
@@ -209,150 +222,8 @@ setInterval(function(){
 	backup();
 }, 300000);
 
-function fish(user){
-	//random number based.
-}
-
-function fishing(user){
-	let userx = Math.floor(user.x);
-	let usery = Math.floor(user.y);
-	let tile;
-	switch(user.facing){
-		case "N":
-			tile = map.layers["layer2"][usery-1][userx];
-			break;
-		case "S":
-			tile = map.layers["layer2"][usery+1][userx];
-			break
-		case "E":
-			tile = map.layers["layer2"][usery][userx+1];
-			break
-		case "W":
-			tile = map.layers["layer2"][usery][userx-1];
-			break;
-		case "NE":
-			tile = map.layers["layer2"][usery-1][userx+1];
-			break;
-		case "NW":
-			tile = map.layers["layer2"][usery-1][userx-1];
-			break;
-		case "SE":
-			tile = map.layers["layer2"][usery+1][userx+1];
-			break;
-		case "SW":
-			tile = map.layers["layer2"][usery-1][userx-1];
-			break;
-	}
-	if(tile >= 304 && tile <= 398){
-		user.action = "fishing";
-		console.log("successfuly fished");
-		console.log(user.action);
-	}else{
-		console.log("failed fished");
-		user.action = "";
-	}
-}
-
-//calculates player movement, also accounts for collisions.
-//gets the position of the tile where the user wants to move to based on current coordinates plus movespeed, checks to see if it is walkable.
-function calcMovement(user, timeDifference){
-	if(user.moving){
-		//count the number of movement keys pressed
-		let count = Object.values(user.movement).reduce((x,y)=>x+y, 0);
-		//since 3 are pressed and 2 directions cancel each other out, only go 1 direction
-		if(count === 3){
-			if(user.movement.left && user.movement.right){
-				//if W key is held and tile above is walkable.
-				if(user.movement.up){
-					user.facing = "N";
-					if(map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed*timeDifference))][Math.floor(user.x)] === 0){
-						user.y-=(movespeed*timeDifference);
-					}
-				}else if(user.movement.down){
-					user.facing = "S";
-					if(map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed*timeDifference))][Math.floor(user.x)] === 0){
-						user.y+=(movespeed*timeDifference);
-					}
-				}
-			}else if(user.movement.up && user.movement.down){
-				if(user.movement.left){
-					user.facing = "W";
-					if(map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x-(charactersize/100)-(movespeed*timeDifference))] === 0){
-						user.x-=(movespeed*timeDifference);
-					}
-				}else if(user.movement.right){
-					user.facing = "E";
-					if(map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x+(charactersize/100)+(movespeed*timeDifference))] === 0){
-						user.x+=(movespeed*timeDifference);
-					}
-				}
-			}
-		}else if(count === 2){
-			if(user.movement.left && user.movement.up){
-				user.facing = "NW";
-				if(map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed/2*timeDifference))][Math.floor(user.x-(charactersize/100)-(movespeed/2*timeDifference))] === 0){
-					user.x-=((movespeed/2)*timeDifference);
-					user.y-=((movespeed/2)*timeDifference);
-				}else if(map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x-(charactersize/100)-(movespeed/2*timeDifference))] === 0){
-					user.x-=((movespeed/2)*timeDifference);
-				}else if(map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed/2*timeDifference))][Math.floor(user.x)] === 0){
-					user.y-=((movespeed/2)*timeDifference);
-				}
-			}else if(user.movement.left && user.movement.down){
-				user.facing = "SW";
-				if(map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed/2*timeDifference))][Math.floor(user.x-(charactersize/100)-(movespeed/2*timeDifference))] === 0){
-					user.x-=((movespeed/2)*timeDifference);
-					user.y+=((movespeed/2)*timeDifference);
-				}else if(map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x-(charactersize/100)-(movespeed/2*timeDifference))] === 0){
-					user.x-=((movespeed/2)*timeDifference);
-				}else if(map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed/2*timeDifference))][Math.floor(user.x)] === 0){
-					user.y+=((movespeed/2)*timeDifference);
-				}
-			}else if(user.movement.right && user.movement.up){
-				user.facing = "NE";
-				if(map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed/2*timeDifference))][Math.floor(user.x+(charactersize/100)+(movespeed/2*timeDifference))] === 0){
-					user.x+=((movespeed/2)*timeDifference);
-					user.y-=((movespeed/2)*timeDifference);
-				}else if(map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x+(charactersize/100)+(movespeed/2*timeDifference))] === 0){
-					user.x+=((movespeed/2)*timeDifference);
-				}else if(map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed/2*timeDifference))][Math.floor(user.x)] === 0){
-					user.y-=((movespeed/2)*timeDifference);
-				}
-			}else if(user.movement.right && user.movement.down){
-				user.facing = "SE";
-				if(map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed/2*timeDifference))][Math.floor(user.x+(charactersize/100)+(movespeed/2*timeDifference))] === 0){
-					user.x+=((movespeed/2)*timeDifference);
-					user.y+=((movespeed/2)*timeDifference);
-				}else if(map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x+(charactersize/100)+(movespeed/2*timeDifference))] === 0){
-					user.x+=((movespeed/2)*timeDifference);
-				}else if(map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed/2*timeDifference))][Math.floor(user.x)] === 0){
-					user.y+=((movespeed/2)*timeDifference);
-				}
-			}
-		}else if(count === 1){
-			if(user.movement.left){
-				user.facing = "W";
-				if(map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x-(charactersize/100)-(movespeed*timeDifference))] === 0){
-					user.x-=(movespeed*timeDifference);
-				}
-			}else if(user.movement.right){
-				user.facing = "E";
-				if(map.layers["layer2"][Math.floor(user.y)][Math.floor(user.x+(charactersize/100)+(movespeed*timeDifference))] === 0){
-					user.x+=(movespeed*timeDifference);
-				}
-			}else if(user.movement.up){
-				user.facing = "N";
-				if(map.layers["layer2"][Math.floor(user.y-(charactersize/100)-(movespeed*timeDifference))][Math.floor(user.x)] === 0){
-					user.y-=(movespeed*timeDifference);
-				}
-			}else if(user.movement.down){
-				user.facing = "S";
-				if(map.layers["layer2"][Math.floor(user.y+(charactersize/100)+(movespeed*timeDifference))][Math.floor(user.x)] === 0){
-					user.y+=(movespeed*timeDifference);
-				}
-			}
-		}
-	}
+function emitGameError(socket, message){
+	//socket.emit('Game Error', message);
 }
 
 async function backup(){
@@ -367,67 +238,26 @@ async function backup(){
 	await fssync.writeFile(file, data);
 }
 
-function calcPacket(input){
-	let player = {
-		map: {
-			layer1: calcPlayerMap(input.x, input.y, "layer1"),
-			layer2: calcPlayerMap(input.x, input.y, "layer2"),
-			layer3: calcPlayerMap(input.x, input.y, "layer3"),
-			layer4: calcPlayerMap(input.x, input.y, "layer4")
-		},
-		player: {
-			x: input.x,
-			y: input.y,
-			inventory: input.inventory,
-			moving: input.moving,
-			facing: input.facing,
-			action: input.action
-		},
-		enemy: {
-
-		}
-	}
-	return player;
-}
-
-function calcPlayerMap(x, y, n){
-	x = Math.floor(x);
-	y = Math.floor(y);
-	let calcArray = [];
-	let xmin = x - horizontaldrawdistance/2;
-	let xmax = x + horizontaldrawdistance/2;
-	let ymin = y - verticaldrawdistance/2;
-	let ymax = y + verticaldrawdistance/2;
-	for(let j = ymin; j < ymax; j++){
-		var tempArray = [];
-		for(let i = xmin; i < xmax; i++){
-			if(i < 0 || i > mapwidth-1 || j < 0 || j > mapheight-1){
-				tempArray.push(0);
-			}else{
-				tempArray.push(map.layers[n][j][i]);
-			}
-		}
-		calcArray.push(tempArray);
-	}
-	return calcArray;
-}
-
 //populate allplayers
 async function populatePlayers(){
 	console.log("Loading Players...");
 	let data = await fs.readFileSync(file);
 	if(data.length > 2){
-		allplayers = JSON.parse(data);
+		let temp = JSON.parse(data);
 		console.log("Loading Players Done.");
 		//incase of crash and restored backup - reset the properties.
-		for(let i = 0, j = allplayers.length; i < j; i++){
-			allplayers[i].socket = "";
-			allplayers[i].action = "";
-			allplayers[i].moving = false;
-			allplayers[i].movement.up = false;
-			allplayers[i].movement.right = false;
-			allplayers[i].movement.down = false;
-			allplayers[i].movement.left = false;
+		for(let i = 0, j = temp.length; i < j; i++){
+			temp[i].socket = "";
+			temp[i].action = "";
+			temp[i].moving = false;
+			temp[i].movement.up = false;
+			temp[i].movement.right = false;
+			temp[i].movement.down = false;
+			temp[i].movement.left = false;
+			let player = new Player(temp[i].username, temp[i].email, temp[i].password, temp[i].socket, temp[i].x, temp[i].y,
+				charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance, temp[i].gold, temp[i].facing, temp[i].xp, 
+				temp[i].skills, temp[i].inventory);
+			allplayers.push(player);
 		}
 	} else {
 		console.log("Players is empty");
@@ -536,6 +366,40 @@ let question = function(q){
 				break;
 			case "map":
 				console.log("Map size: "+map.layers["layer1"].length + " X "+map.layers["layer1"][0].length);
+				break;
+			case "empty":
+				activeplayers[0].inventory = {
+					slot1: "",
+					slot2: "",
+					slot3: "",
+					slot4: "",
+					slot5: "",
+					slot6: "",
+					slot7: "",
+					slot8: "",
+					slot9: "",
+					slot10: "",
+					slot11: "",
+					slot12: "",
+					slot13: "",
+					slot14: "",
+					slot15: "",
+					slot16: "",
+					slot17: "",
+					slot18: "",
+					slot19: "",
+					slot20: "",
+					slot21: "",
+					slot22: "",
+					slot23: "",
+					slot24: "",
+					slot25: "",
+					slot26: "",
+					slot27: "",
+					slot28: "",
+					slot29: "",
+					slot30: ""
+				}
 				break;
 			case "backup":
 				console.log("performing backup...");
