@@ -114,18 +114,25 @@ function validateEmail(email){
 }
 
 socket.on('failed new user', function(error){
+    console.log(error);
     let usernameError = document.getElementById('new-player-name-error');
     let emailError = document.getElementById('new-player-email-error');
     let passwordError = document.getElementById('new-player-password-error');
-    usernameError.innerHTML, emailError.innerHTML, passwordError.innerHTML = "";
-    if(error.username.length > 0){
-        document.getElementById('new-player-name-error').innerHTML = error.username;
+    
+    if(error.username !== false){
+        usernameError.innerHTML = error.username;
+    }else{
+        usernameError.innerHTML = "";
     }
-    if(error.email.length > 0){
-        document.getElementById('new-player-email-error').innerHTML = error.email;
+    if(error.email !== false){
+        emailError.innerHTML = error.email;
+    }else{
+        emailError.innerHTML = "";
     }
-    if(error.password.length > 0){
-        document.getElementById('new-player-password-error').innerHTML = error.password;
+    if(error.password !== false){
+        passwordError.innerHTML = error.password;
+    }else{
+        passwordError.innerHTML = "";
     }
 });
 
@@ -152,4 +159,10 @@ socket.on('success', function(){
     ctx = canvas.getContext("2d");
 
     action();
+
+    document.addEventListener('keydown', function(){
+        if(event.code === 'KeyE'){
+            socket.emit('action', "fish");
+        }
+    });
 });

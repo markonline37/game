@@ -90,11 +90,7 @@ function action(){
     });
 }
 
-document.addEventListener('keydown', function(){
-    if(event.code === 'KeyE'){
-        socket.emit('action', "fish");
-    }
-});
+
 
 let canvas, ctx, arrhori, arrvert, centrehori, centrevert, horiviewdist, vertviewdist, startx, endx, starty, endy;
 
@@ -141,6 +137,10 @@ socket.on('update', function(data){
     //draw buildings position
     //if error, draw error.
 });
+
+socket.on('Game Error', function(data){
+    console.log(data);
+})
 
 function drawMap(map, inx, iny){
     ctx.clearRect(0,0,canvas.width,canvas.height);

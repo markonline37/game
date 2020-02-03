@@ -166,15 +166,15 @@ module.exports = class Player{
 				tile = map.layers["layer2"][usery-1][userx-1];
 				break;
 		}
-		if(!this.emptySpace()){
-			this.action = "";
-			return "Bag is full";
-		}else if(tile >= 304 && tile <= 398){
-			this.action = "fishing";
-			return true;
-		}else{
+		if(tile < 300 || tile > 398){
 			this.action = "";
 			return "Not facing water";
+		}else if(!this.emptySpace()){
+			this.action = "";
+			return "Bag is full";
+		}else{
+			this.action = "fishing";
+			return true;
 		}
 	}
 
