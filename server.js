@@ -13,7 +13,7 @@ const mapwidth = 200;
 const charactersize = 32;
 const movespeed = 0.01;
 const verticaldrawdistance = 40;
-const horizontaldrawdistance = 40;
+const horizontaldrawdistance = 44;
 const startPosX = 50;
 const startPosY = 50;
 const gamespeed = 60;
@@ -63,7 +63,7 @@ io.on('connection', function(socket) {
 	});
 
 	socket.on('returning player', function(data){
-		socketHandler.returningPlayer(data, allPlayers, activePlayers, socket.id, io)
+		socketHandler.returningPlayer(data, allPlayers, activePlayers, socket.id);
 	});
 
 	socket.on('disconnect', function(){

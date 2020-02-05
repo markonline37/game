@@ -41,14 +41,14 @@ module.exports = class SocketHandler{
 				charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance);
 			players.addPlayer(player);
 			activeplayers.addPlayer(player);
-			io.to(socket).emit('success');
+			this.io.to(socket).emit('success');
 			console.log('Player: '+data.username+ ' joined');
 		} else {
-			io.to(socket).emit('failed login', error);
+			this.io.to(socket).emit('failed login', error);
 		}
 	}
 
-	returningPlayer(data, allplayers, activePlayers, socket, io){
+	returningPlayer(data, allplayers, activePlayers, socket){
 		let errors = false;
 		let error = {
 			email: false,
@@ -74,14 +74,18 @@ module.exports = class SocketHandler{
 				errors = true;
 			}
 		}
+		if(activePlayers.findPlayer('email', data.email.toLowerCase()) !== false){
+			error.email = "Account already in use";
+			errors = true;
+		}
 		
 		if(!errors){
 			user.socket = socket;
 			activePlayers.addPlayer(user);
 			console.log('Player: '+user.username+ ' joined');
-			io.to(socket).emit('success');
+			this.io.to(socket).emit('success');
 		}else{
-			io.to(socket).emit('failed login', temp.error);
+			this.io.to(socket).emit('failed login', error);
 		}
 	}
 

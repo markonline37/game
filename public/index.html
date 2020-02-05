@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>Idle Proto</title>
+    <title>Game</title>
     <link rel="stylesheet" type="text/css" href="/css/style.css">
 </head>
 <body>
@@ -49,9 +49,15 @@
             </table>
         </form>
     </div>
-    <canvas id="canvas"></canvas>
+    <div id="row">
+        <div id="column1">
+            <canvas id="canvas"></canvas>
+        </div>
+        <div id="column2">
+            <canvas id="canvas2"></canvas>
+        </div>
+    </div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/game.js"></script>
-    <script src="/js/player.js"></script>
 </body>
 </html>

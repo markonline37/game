@@ -227,7 +227,9 @@ module.exports = class Player{
 				inventory: this.inventory,
 				moving: this.moving,
 				facing: this.facing,
-				action: this.action
+				action: this.action,
+				skills: this.skills,
+				xp: this.xp
 			},
 			enemy:{
 

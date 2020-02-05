@@ -5,25 +5,29 @@ module.exports = class Fishing{
 				minlevel: "0",
 				maxlevel: "10",
 				name: "Brown Trout",
-				xp: 20
+				xp: 20,
+				item: 0
 			},
 			{
 				minlevel: "5",
 				maxlevel: "15",
 				name: "Salmon",
-				xp: 40
+				xp: 40,
+				item: 1
 			},
 			{
 				minlevel: "10",
 				maxlevel: "20",
 				name: "Carp",
-				xp: 50
+				xp: 50,
+				item: 2
 			},
 			{
 				minlevel: "15",
 				maxlevel: "25",
 				name: "Grayling",
-				xp: 60
+				xp: 60, 
+				item: 3
 			}
 		];
 	}

@@ -9,7 +9,11 @@ html, body {
 	background-color: #282923;
 }
 
-canvas {
+#canvas {
+	display: none;
+}
+
+#canvas2 {
 	display: none;
 }
 
@@ -19,4 +23,16 @@ canvas {
 
 .t1{
 	text-align: left;
+}
+
+#row{
+	display: flex;
+}
+
+#column1{
+	flex: 80%;
+}
+
+#column2{
+	flex: 20%;
 }
