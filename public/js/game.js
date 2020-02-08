@@ -1,7 +1,8 @@
 const tilesize = 32;
 const canvaswidth = 1600;
 const canvasheight = 1200;
-const sidepanel = 300;
+const sidepanelMinWidth = 180;
+const canvasMinWidth = 900;
 
 var socket = io();
 
@@ -9,7 +10,7 @@ var worldTiles = new Image();
 worldTiles.src = "/image/worldtiles.png";
 var char = new Image();
 char.src = "/image/char.png";
-var itemImg = new Image();
+var itemImg = new Image(); 
 itemImg.src = "/image/items.png";
 
 window.onload = function(){
@@ -22,13 +23,18 @@ function windowResize(){
     let canvas = document.getElementById("canvas");
     let canvas2 = document.getElementById("canvas2");
     if(canvas.style.display === "block"){
-        canvas2.width = sidepanel;
-        if(window.innerWidth < canvaswidth){
+        if(window.innerWidth < sidepanelMinWidth+canvasMinWidth){
+            //min width
+        }
+        if(window.innerWidth <= canvaswidth){
             container.style.width = window.innerWidth;
-            canvas.width = window.innerWidth-sidepanel;
+            canvas.width = window.innerWidth*0.8;
+            canvas2.width = window.innerWidth*0.2;
         }else{
-            container.style.width = canvaswidth;
-            canvas.width = canvaswidth-sidepanel;
+            canvas.width = canvaswidth;
+            canvas2.width = canvaswidth*0.2;
+            container.style.width = canvas.width+canvas2.width;
+
         }
         if(window.innerHeight < canvasheight){
             container.style.height = window.innerHeight;
@@ -355,7 +361,7 @@ function drawUI(skills, xp, inventory){
             if(items[i] !== ""){
                 let sx = (items[i].item%10)*tilesize;
                 let sy = Math.floor(items[i].item/10)*tilesize;
-                let dx = border*2+((i%5)*tilesize)+(i%5)*20+8;
+                let dx = border*2+((i%5)*tilesize)+((canvas2.width-(border*2))-(5*tilesize))/5*(i%5);
                 let dy = canvas2.height/2+(border*6)+(Math.floor(i/5)*tilesize)+(Math.floor(i/5)*(canvas2.height/2-border*6-tilesize*6)/6);
                 ctx2.drawImage(itemImg, sx, sy, tilesize, tilesize, dx, dy, tilesize, tilesize);
             }
