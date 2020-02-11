@@ -105,7 +105,25 @@ module.exports = class Player{
 		};
 	}
 
-	addXP(skill, xp){
+	swapItem(data){
+		let oldslot = data.old;
+		let newslot = data.new;
+		if(this.inventory["slot"+oldslot] !== "" || this.inventory["slot"+newslot] !== ""){
+			let temp = this.inventory["slot"+newslot];
+			this.inventory["slot"+newslot] = this.inventory["slot"+oldslot];
+			this.inventory["slot"+oldslot] = temp;
+		}
+	}
+
+	dropItem(slot){
+		if(this.inventory["slot"+slot] !== ""){
+			let temp = this.inventory["slot"+slot];
+			this.inventory["slot"+slot] = "";
+			return 'Dropped item '+temp.name;
+		}
+	}
+
+	addXP(skill, xp, io, socket){
 		//apply xp
 		this.xp[skill]+=xp;
 		//check for level up
@@ -113,6 +131,8 @@ module.exports = class Player{
 			if(this.levelTable[this.skills[skill]+1]<=this.xp[skill]){
 				//level up
 				this.skills[skill]++;
+				let temp = 'You leveled up in '+skill+' to level '+this.skills[skill];
+				io.to(socket).emit('Game Message', temp);
 			}
 		}
 	}
@@ -178,7 +198,7 @@ module.exports = class Player{
 		}
 	}
 
-	tickFish(fishingLootTable){
+	tickFish(fishingLootTable, io, socket){
 		if(!this.emptySpace()){
 			this.action = "";
 			return "Bag is full";
@@ -186,7 +206,8 @@ module.exports = class Player{
 			if((Math.floor(Math.random()*Math.floor(1000-this.skills.fishing))) <= 1){
 				let fish = fishingLootTable.calcLoot(this.skills.fishing);
 				this.addItem(fish);
-				this.addXP('fishing', fish.xp);
+				this.addXP('fishing', fish.xp, io, socket);
+				return String("Caught a "+fish.name);
 			}
 		}
 	}
@@ -229,7 +250,8 @@ module.exports = class Player{
 				facing: this.facing,
 				action: this.action,
 				skills: this.skills,
-				xp: this.xp
+				xp: this.xp,
+				levelTable: this.levelTable
 			},
 			enemy:{
 

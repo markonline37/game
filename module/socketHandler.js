@@ -108,9 +108,23 @@ module.exports = class SocketHandler{
 			case "fish":
 				let temp = user.actionFishing(map);
 				if(typeof temp === 'string' || temp instanceof String){
-					io.to(socket).emit('Game Error', temp);
+					io.to(socket).emit('Game Message', temp);
 				}
 				break;
+		}
+	}
+
+	dropItem(user, data, socket, io){
+		let temp = user.dropItem(data);
+		if(typeof temp === 'string' || temp instanceof String){
+			io.to(socket).emit('Game Message', temp);
+		}
+	}
+
+	swapItem(user, data, socket, io){
+		let temp = user.swapItem(data);
+		if(typeof temp === 'string' || temp instanceof String){
+			io.to(socket).emit('Game Message', temp);
 		}
 	}
 }

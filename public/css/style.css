@@ -26,13 +26,15 @@ html, body {
 }
 
 #row{
-	display: flex;
+	position: relative;
 }
 
 #column1{
-	flex: 80%;
+	position: absolute;
+	z-index: 0;
 }
 
 #column2{
-	flex: 20%;
+	position: absolute;
+	z-index: 1;
 }

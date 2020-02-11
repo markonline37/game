@@ -3,12 +3,12 @@
         "username": "Mark",
         "email": "markonline37@gmail.com",
         "password": "322c0434f4893e2763a1b54556e0a4ea527a270413c10242dfc1d2ddc24e9ede",
-        "socket": "UkAM93Spf7mJ4ghrAAAG",
+        "socket": "cccxIQNG5jk5AwkBAAAB",
         "gold": 0,
-        "x": 48.670000000000016,
-        "y": 42.41000000000018,
+        "x": 60.41500000000006,
+        "y": 39.430000000000064,
         "moving": false,
-        "horizontaldraw": 44,
+        "horizontaldraw": 46,
         "verticaldraw": 40,
         "charactersize": 32,
         "movespeed": 0.01,
@@ -20,21 +20,21 @@
             "right": false
         },
         "xp": {
-            "fishing": 2510,
+            "fishing": 860,
             "woodcutting": 0
         },
         "skills": {
-            "fishing": 11,
+            "fishing": 6,
             "woodcutting": 0
         },
-        "action": "",
+        "action": "fishing",
         "inventory": {
             "slot1": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
             },
             "slot2": {
                 "minlevel": "0",
@@ -44,201 +44,99 @@
                 "item": 0
             },
             "slot3": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot4": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot5": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot6": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot7": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot8": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot9": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot10": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot11": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot12": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot13": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot14": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot15": {
                 "minlevel": "0",
                 "maxlevel": "10",
                 "name": "Brown Trout",
                 "xp": 20,
                 "item": 0
             },
-            "slot16": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
+            "slot4": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
             },
-            "slot17": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
+            "slot5": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
             },
-            "slot18": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
+            "slot6": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
             },
-            "slot19": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
+            "slot7": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
             },
-            "slot20": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
+            "slot8": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
             },
-            "slot21": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
+            "slot9": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
             },
-            "slot22": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
+            "slot10": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
             },
-            "slot23": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
+            "slot11": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
             },
-            "slot24": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
+            "slot12": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
             },
-            "slot25": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
+            "slot13": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
             },
-            "slot26": {
-                "minlevel": "10",
-                "maxlevel": "20",
-                "name": "Carp",
-                "xp": 50,
-                "item": 2
-            },
-            "slot27": {
-                "minlevel": "10",
-                "maxlevel": "20",
-                "name": "Carp",
-                "xp": 50,
-                "item": 2
-            },
-            "slot28": {
-                "minlevel": "10",
-                "maxlevel": "20",
-                "name": "Carp",
-                "xp": 50,
-                "item": 2
-            },
-            "slot29": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot30": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            }
+            "slot14": "",
+            "slot15": "",
+            "slot16": "",
+            "slot17": "",
+            "slot18": "",
+            "slot19": "",
+            "slot20": "",
+            "slot21": "",
+            "slot22": "",
+            "slot23": "",
+            "slot24": "",
+            "slot25": "",
+            "slot26": "",
+            "slot27": "",
+            "slot28": "",
+            "slot29": "",
+            "slot30": ""
         },
         "maxlevel": 20,
         "levelTable": {

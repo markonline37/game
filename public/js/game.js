@@ -3,6 +3,7 @@ const canvaswidth = 1600;
 const canvasheight = 1200;
 const sidepanelMinWidth = 180;
 const canvasMinWidth = 900;
+const canvasMinHeight = 600;
 
 var socket = io();
 
@@ -12,6 +13,8 @@ var char = new Image();
 char.src = "/image/char.png";
 var itemImg = new Image(); 
 itemImg.src = "/image/items.png";
+var skillIcons = new Image();
+skillIcons.src = "/image/skillicons.png";
 
 window.onload = function(){
     windowResize();
@@ -20,31 +23,51 @@ window.onload = function(){
 
 function windowResize(){
     let container = document.getElementById("row");
-    let canvas = document.getElementById("canvas");
-    let canvas2 = document.getElementById("canvas2");
+    canvas = document.getElementById("canvas");
+    canvas2 = document.getElementById("canvas2");
     if(canvas.style.display === "block"){
-        if(window.innerWidth < sidepanelMinWidth+canvasMinWidth){
+        //width
+        if(window.innerWidth <= sidepanelMinWidth+canvasMinWidth){
             //min width
-        }
-        if(window.innerWidth <= canvaswidth){
+            container.style.width = sidepanelMinWidth+canvasMinWidth;
+            canvas.width = canvasMinWidth;
+            canvas2.width = canvasMinWidth+sidepanelMinWidth;
+        }else if(window.innerWidth <= canvaswidth*1.2){
+            //innerWidth
             container.style.width = window.innerWidth;
             canvas.width = window.innerWidth*0.8;
-            canvas2.width = window.innerWidth*0.2;
+            canvas2.width = window.innerWidth;
         }else{
-            canvas.width = canvaswidth;
-            canvas2.width = canvaswidth*0.2;
-            container.style.width = canvas.width+canvas2.width;
-
+            //max width
+            container.style.width = canvaswidth;
+            canvas.width = canvaswidth*0.8;
+            canvas2.width = canvaswidth;
         }
-        if(window.innerHeight < canvasheight){
+        //height
+        if(window.innerHeight <= canvasMinHeight){
+            //min height
+            container.style.height = canvasMinHeight;
+            canvas.height = canvasMinHeight;
+            canvas2.height = canvasMinHeight;
+        }else if(window.innerHeight <= canvasheight){
+            //innerHeight
             container.style.height = window.innerHeight;
             canvas.height = window.innerHeight;
             canvas2.height = window.innerHeight;
         }else{
+            //max height
             container.style.height = canvasheight;
             canvas.height = canvasheight;
             canvas2.height = canvasheight;
         }
+        /*console.log("window width: "+window.innerWidth);
+        console.log("window height: "+window.innerHeight);
+        console.log("container width: "+container.style.width);
+        console.log("container height: "+container.style.height);
+        console.log("canvas width: "+canvas.width);
+        console.log("canvas height: "+canvas.height);
+        console.log("canvas2 width: "+canvas2.width);
+        console.log("canvas2 height: "+canvas2.height);*/
     }
     
     container.style.margin = "0 auto";
@@ -58,6 +81,10 @@ function windowResize(){
     endx = centrehori+(horiviewdist*tilesize)+tilesize;
     starty = centrevert-(vertviewdist*tilesize);
     endy = centrevert+(vertviewdist*tilesize)+tilesize;
+
+    if(inventorySlots.length !== 0){
+        inventoryPosition();
+    }
 
     storedSkills = "";
     storedXp = "";
@@ -199,6 +226,13 @@ socket.on('success', function(){
     uses a toggle for movement etc because it fires constantly
     without, and this is event based.
 */
+let mouseisdown = false;
+let helditem = null;
+let mouseposx = null;
+let mouseposy = null;
+let droppedItem = false;
+let itemoffsetx = null;
+let itemoffsety = null;
 function action(){
     let movement = {
         up: false,
@@ -281,6 +315,51 @@ function action(){
             socket.emit('action', "fish");
         }
     });
+
+    
+    canvas2.addEventListener('mousedown', function(e){
+        if(e.offsetY <= canvas2.height/2 && e.offsetX >= canvas2.width*0.8){
+            //skill 
+        }else if(e.offsetY >=canvas2.height/2 && e.offsetX >= canvas2.width*0.8){
+            mouseisdown = true;
+            //inventory
+            for(let i = 0, j = inventorySlots.length; i<j; i++){
+                let k = inventorySlots[i];
+                if(k.startx <= e.offsetX && k.endx >= e.offsetX && k.starty <= e.offsetY && k.endy >= e.offsetY){
+                    itemoffsetx = k.startx+(k.endx-k.startx)/2 - e.offsetX;
+                    itemoffsety = k.starty+(k.endy-k.starty)/2 - e.offsetY;
+                    helditem = k.slot;
+                    mouseposx = e.offsetX;
+                    mouseposy = e.offsetY;
+                }
+            }
+        }
+    });
+
+    canvas2.addEventListener('mousemove', function(e){
+        if(mouseisdown){
+            mouseposx = e.offsetX;
+            mouseposy = e.offsetY;
+        }
+    });
+
+    canvas2.addEventListener('mouseup', function(e){
+        if(mouseisdown){
+            for(let i = 0, j = inventorySlots.length; i<j; i++){
+                let k = inventorySlots[i];
+                if(k.startx <= e.offsetX && k.endx >= e.offsetX && k.starty <= e.offsetY && k.endy >= e.offsetY){
+                    socket.emit('swap item', {old: helditem, new: k.slot});
+                }else if(e.offsetX <= (canvas2.width*0.8+border) || e.offsetY <= (canvas2.height/2+(border*5))){
+                    socket.emit('drop item', helditem);
+                }
+            }
+            helditem = null;
+            mouseposx = null;
+            mouseposy = null;
+        }
+        mouseisdown = false;
+        droppedItem = true;
+    });
 }
 
 let canvas, canvas2, ctx, ctx2, arrhori, arrvert, centrehori, centrevert, horiviewdist, vertviewdist, startx, endx, starty, endy;
@@ -294,9 +373,10 @@ let timeidle = 0;
 //fishing
 let isfishing = false;
 let timefishing = 0;
-
+let lastPacket;
 
 socket.on('update', function(data){
+    lastPacket = data;
     if(toggle){
         console.log(data);
         toggle = false;
@@ -320,57 +400,142 @@ socket.on('update', function(data){
     arrhori = data.map["layer1"][0].length/2;
     arrvert = data.map["layer1"].length/2;
 
+    drawScreen(data);
+});
+
+function drawScreen(data){
     drawMap(data.map, data.player.x, data.player.y);
     drawPlayer(data.player);
-    drawUI(data.player.skills, data.player.xp, data.player.inventory);
+    drawUI(data.player.skills, data.player.xp, data.player.inventory, data.player.levelTable);
     //draw enemie(s) position/rotation/action
     //draw buildings position
     //if error, draw error.
+    if(messageBuffer.length > 0){
+        drawGameMessage();
+    }
+}
+
+let messageBuffer = [];
+socket.on('Game Message', function(data){
+    messageBuffer.push(data);
+    setTimeout(function(){
+        messageBuffer.shift();
+        drawScreen(lastPacket);
+    }, 4000);
 });
 
-socket.on('Game Error', function(data){
-    console.log(data);
-});
+function drawGameMessage(){
+    ctx.font = "30px Calibri";
+    let space = 30;
+    for(let i = 0, j = messageBuffer.length; i < j; i++){
+        ctx.fillText(messageBuffer[i], 10, canvas.height-10-(i*space));
+    }    
+}
+
+let inventorySlots = [];
+function inventoryPosition(){
+    inventorySlots = [];
+    let horizontalSpace = ((canvas2.width*0.2)-(border*2+2)-(tilesize*5))/6;
+    let verticalSpace = (canvas2.height/2-(border*5+2)-(tilesize*6))/7;
+    let halfh = horizontalSpace/2;
+    let halfv = verticalSpace/2;
+    for(let i = 0, j = Object.keys(storedInventory).length; i < j; i++){
+        let tempx = (canvas2.width*0.8)+border+((i%5)*tilesize)+((i%5)+1)*horizontalSpace;
+        let tempy = canvas2.height/2+(border*6)+(Math.floor(i/5)*tilesize)+Math.floor(i/5)*verticalSpace;
+        inventorySlots.push({
+            slot: i+1,
+            startx: tempx-halfh,
+            starty: tempy-halfv,
+            endx: tempx+tilesize+halfh,
+            endy: tempy+tilesize+halfv
+        });
+    }
+    //console.log(inventorySlots[0].starty);
+}
 
 let storedXp, storedInventory;
-function drawUI(skills, xp, inventory){
-    if(JSON.stringify(storedXp) !== JSON.stringify(xp)){
+let border = 10;
+function drawUI(skills, xp, inventory, levelTable){
+    ctx2.clearRect(0,0,canvas2.width*0.8,canvas2.height);
+    if(JSON.stringify(storedXp) !== JSON.stringify(xp) || helditem !== null || droppedItem){
+        ctx2.clearRect(canvas2.width*0.8,0,canvas2.width,canvas2.height/2);
         storedXp = xp;
         //draw XP
-    }
-    if(JSON.stringify(storedInventory) !== JSON.stringify(inventory)){
-        let border = 10;
-        storedInventory = inventory;
-        //draw inventory
         ctx2.beginPath();
         ctx2.fillStyle = "black";
-        ctx2.rect(0, canvas2.height/2, canvas2.width, canvas2.height);
+        ctx2.rect(canvas2.width*0.8, 0, canvas2.width*0.2, canvas2.height/2);
         ctx2.fill();
         ctx2.closePath();
         ctx2.beginPath();
         ctx2.fillStyle = "#DCCA98";
-        ctx2.rect(border, canvas2.height/2+border, canvas2.width-(border*2), canvas2.height/2-(border*2));
+        ctx2.rect(canvas2.width*0.8+border, 0+border, canvas2.width*0.2-border*2, canvas2.height/2-border);
         ctx2.fill();
         ctx2.closePath();
         ctx2.fillStyle = "black";
         ctx2.font = "30px Calibri";
-        ctx2.fillText("Inventory", border*2, canvas.height/2+(border*4));
+        ctx2.fillText("Skills", canvas2.width*0.8+border*2, 0+border*4);
+        ctx2.font = "15px Calibri";
+        let j = 0;
+        for(let i in skills){
+            let dx = canvas2.width*0.8+border*2;
+            let dy = border*6+j*tilesize+j*border;
+            ctx2.drawImage(skillIcons, j*tilesize, 0, tilesize, tilesize, dx, dy, tilesize, tilesize);
+            ctx2.fillText("Lvl: "+skills[i], dx+tilesize+border, dy+tilesize/4);
+            let temp;
+            if(skills[i] >= Object.keys(levelTable).length){
+                temp = xp[i]+"/Max";
+            }else{
+                temp = xp[i]+"/"+Object.values(levelTable)[skills[i]];
+            }
+            ctx2.fillText("Exp: "+temp, dx+tilesize+border, dy+tilesize);
+            j++;
+        }
+    }
+    if((JSON.stringify(storedInventory) !== JSON.stringify(inventory)) || helditem !== null || droppedItem){
+        droppedItem = false;
+        ctx2.clearRect(canvas2.width*0.8,canvas2.height/2,canvas2.width,canvas2.height);
+        storedInventory = inventory;
+        if(inventorySlots.length === 0){
+            inventoryPosition();
+        }
+
+        //draw inventory
+        ctx2.beginPath();
+        ctx2.fillStyle = "black";
+        ctx2.rect(canvas2.width*0.8, canvas2.height/2, canvas2.width, canvas2.height);
+        ctx2.fill();
+        ctx2.closePath();
+        ctx2.beginPath();
+        ctx2.fillStyle = "#DCCA98";
+        ctx2.rect(canvas2.width*0.8+border, canvas2.height/2+border, canvas2.width*0.2-(border*2), canvas2.height/2-(border*2));
+        ctx2.fill();
+        ctx2.closePath();
+        ctx2.fillStyle = "black";
+        ctx2.font = "30px Calibri";
+        ctx2.fillText("Inventory", canvas2.width*0.8+border*2, canvas.height/2+(border*4));
         let items = Object.values(inventory);
         let k = 0;
+        let horizontalSpace = ((canvas2.width*0.2)-(border*2+2)-(tilesize*5))/6;
+        let verticalSpace = (canvas2.height/2-(border*5+2)-(tilesize*6))/7;
         for(let i = 0, j = items.length; i<j; i++){
             if(items[i] !== ""){
-                let sx = (items[i].item%10)*tilesize;
-                let sy = Math.floor(items[i].item/10)*tilesize;
-                let dx = border*2+((i%5)*tilesize)+((canvas2.width-(border*2))-(5*tilesize))/5*(i%5);
-                let dy = canvas2.height/2+(border*6)+(Math.floor(i/5)*tilesize)+(Math.floor(i/5)*(canvas2.height/2-border*6-tilesize*6)/6);
-                ctx2.drawImage(itemImg, sx, sy, tilesize, tilesize, dx, dy, tilesize, tilesize);
+                if(helditem-1 === i){
+                    //currently dragged item
+                    let sx = (items[i].item%10)*tilesize;
+                    let sy = Math.floor(items[i].item/10)*tilesize;
+                    let dx = mouseposx-(tilesize/2)+itemoffsetx;
+                    let dy = mouseposy-(tilesize/2)+itemoffsety;
+                    ctx2.drawImage(itemImg, sx, sy, tilesize, tilesize, dx, dy, tilesize, tilesize);
+                }else{
+                    let sx = (items[i].item%10)*tilesize;
+                    let sy = Math.floor(items[i].item/10)*tilesize;
+                    let dx = (canvas2.width*0.8)+border+((i%5)*tilesize)+((i%5)+1)*horizontalSpace;
+                    let dy = canvas2.height/2+(border*6)+(Math.floor(i/5)*tilesize)+Math.floor(i/5)*verticalSpace;
+                    ctx2.drawImage(itemImg, sx, sy, tilesize, tilesize, dx, dy, tilesize, tilesize);
+                }
             }
         }
     }
-}
-
-function objectEquality(x, y){
-    let xProperties = Object.getOwnProperty
 }
 
 function drawMap(map, inx, iny){

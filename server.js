@@ -13,7 +13,7 @@ const mapwidth = 200;
 const charactersize = 32;
 const movespeed = 0.01;
 const verticaldrawdistance = 40;
-const horizontaldrawdistance = 44;
+const horizontaldrawdistance = 46;
 const startPosX = 50;
 const startPosY = 50;
 const gamespeed = 60;
@@ -90,6 +90,20 @@ io.on('connection', function(socket) {
 			socketHandler.action(user, data, socket.id, activePlayers, map, io);
 		}
 	});
+
+	socket.on('drop item', function(data){
+		let user = activePlayers.findPlayer('socket', socket.id);
+		if(user !== false){
+			socketHandler.dropItem(user, data, socket.id, io);
+		}
+	});
+
+	socket.on('swap item', function(data){
+		let user = activePlayers.findPlayer('socket', socket.id);
+		if(user !== false){
+			socketHandler.swapItem(user, data, socket.id, io);
+		}
+	});
 });
 
 //main loop
@@ -103,9 +117,9 @@ setInterval(function() {
 		let user = players[i];
 		if(user.action !== ""){
 			if(user.action === "fishing"){
-				let temp = user.tickFish(fishingObj);
+				let temp = user.tickFish(fishingObj, io ,user.socket);
 				if(typeof temp === 'string' || temp instanceof String){
-					io.to(user.socket).emit('Game Error', temp);
+					io.to(user.socket).emit('Game Message', temp);
 				}
 			}
 		}
@@ -200,6 +214,43 @@ let question = function(q){
 				break;
 			case "backup":
 				backup();
+				break;
+			case "fish0":
+				let user2 = activePlayers.findPlayer('email', 'markonline37@gmail.com');
+				user2.skills.fishing = 0;
+				user2.xp.fishing = 0;
+				user2.inventory = {
+					slot1: "",
+					slot2: "",
+					slot3: "",
+					slot4: "",
+					slot5: "",
+					slot6: "",
+					slot7: "",
+					slot8: "",
+					slot9: "",
+					slot10: "",
+					slot11: "",
+					slot12: "",
+					slot13: "",
+					slot14: "",
+					slot15: "",
+					slot16: "",
+					slot17: "",
+					slot18: "",
+					slot19: "",
+					slot20: "",
+					slot21: "",
+					slot22: "",
+					slot23: "",
+					slot24: "",
+					slot25: "",
+					slot26: "",
+					slot27: "",
+					slot28: "",
+					slot29: "",
+					slot30: ""
+				}
 				break;
 			case "q":
 			case "exit":
