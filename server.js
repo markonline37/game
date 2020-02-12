@@ -124,7 +124,7 @@ setInterval(function() {
 			}
 		}
 		user.calcMovement(map, timeDifference);
-		let packet = user.calcPacket(map);
+		let packet = user.calcPacket(map, activePlayers);
 		/*//if lastPacket is empty
 		if((Object.entries(lastPacket).length === 0 && lastPacket.constructor === Object)){
 			lastPacket[user.email]=packet;

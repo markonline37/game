@@ -3,10 +3,10 @@
         "username": "Mark",
         "email": "markonline37@gmail.com",
         "password": "322c0434f4893e2763a1b54556e0a4ea527a270413c10242dfc1d2ddc24e9ede",
-        "socket": "cccxIQNG5jk5AwkBAAAB",
+        "socket": "-gT5Z_gJjoP71V9nAAAK",
         "gold": 0,
-        "x": 60.41500000000006,
-        "y": 39.430000000000064,
+        "x": 57.99000000000065,
+        "y": 40.410000000000004,
         "moving": false,
         "horizontaldraw": 46,
         "verticaldraw": 40,
@@ -20,11 +20,11 @@
             "right": false
         },
         "xp": {
-            "fishing": 860,
+            "fishing": 1480,
             "woodcutting": 0
         },
         "skills": {
-            "fishing": 6,
+            "fishing": 8,
             "woodcutting": 0
         },
         "action": "fishing",
@@ -58,11 +58,11 @@
                 "item": 0
             },
             "slot5": {
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0
+                "minlevel": "5",
+                "maxlevel": "15",
+                "name": "Salmon",
+                "xp": 40,
+                "item": 1
             },
             "slot6": {
                 "minlevel": "0",
@@ -120,6 +120,163 @@
                 "xp": 20,
                 "item": 0
             },
+            "slot14": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
+            },
+            "slot15": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
+            },
+            "slot16": {
+                "minlevel": "5",
+                "maxlevel": "15",
+                "name": "Salmon",
+                "xp": 40,
+                "item": 1
+            },
+            "slot17": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
+            },
+            "slot18": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
+            },
+            "slot19": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
+            },
+            "slot20": {
+                "minlevel": "5",
+                "maxlevel": "15",
+                "name": "Salmon",
+                "xp": 40,
+                "item": 1
+            },
+            "slot21": {
+                "minlevel": "5",
+                "maxlevel": "15",
+                "name": "Salmon",
+                "xp": 40,
+                "item": 1
+            },
+            "slot22": {
+                "minlevel": "5",
+                "maxlevel": "15",
+                "name": "Salmon",
+                "xp": 40,
+                "item": 1
+            },
+            "slot23": {
+                "minlevel": "5",
+                "maxlevel": "15",
+                "name": "Salmon",
+                "xp": 40,
+                "item": 1
+            },
+            "slot24": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
+            },
+            "slot25": {
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0
+            },
+            "slot26": "",
+            "slot27": "",
+            "slot28": "",
+            "slot29": "",
+            "slot30": ""
+        },
+        "maxlevel": 20,
+        "levelTable": {
+            "1": 100,
+            "2": 210,
+            "3": 332,
+            "4": 468,
+            "5": 622,
+            "6": 798,
+            "7": 1033,
+            "8": 1268,
+            "9": 1542,
+            "10": 1866,
+            "11": 2252,
+            "12": 2715,
+            "13": 3275,
+            "14": 3958,
+            "15": 4799,
+            "16": 5842,
+            "17": 7145,
+            "18": 8787,
+            "19": 10873,
+            "20": 13543
+        }
+    },
+    {
+        "username": "chris",
+        "email": "chris@gmail.com",
+        "password": "322c0434f4893e2763a1b54556e0a4ea527a270413c10242dfc1d2ddc24e9ede",
+        "socket": "bVtO7u7-kAd60rBjAAAL",
+        "gold": 0,
+        "x": 61.05000000000022,
+        "y": 43.56999999999997,
+        "moving": false,
+        "horizontaldraw": 46,
+        "verticaldraw": 40,
+        "charactersize": 32,
+        "movespeed": 0.01,
+        "facing": "E",
+        "movement": {
+            "up": false,
+            "down": false,
+            "left": false,
+            "right": false
+        },
+        "xp": {
+            "fishing": 0,
+            "woodcutting": 0
+        },
+        "skills": {
+            "fishing": 0,
+            "woodcutting": 0
+        },
+        "action": "",
+        "inventory": {
+            "slot1": "",
+            "slot2": "",
+            "slot3": "",
+            "slot4": "",
+            "slot5": "",
+            "slot6": "",
+            "slot7": "",
+            "slot8": "",
+            "slot9": "",
+            "slot10": "",
+            "slot11": "",
+            "slot12": "",
+            "slot13": "",
             "slot14": "",
             "slot15": "",
             "slot16": "",

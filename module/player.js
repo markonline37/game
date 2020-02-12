@@ -239,7 +239,44 @@ module.exports = class Player{
 		return returnObj;
 	}
 
-	calcPacket(map){
+	calcPacket(map, activeplayers){
+		let list = activeplayers.getPlayers();
+		let active = [];
+		for(let i = 0, j = list.length; i < j; i++){
+			if(list[i].email !== this.email){
+				let isInHoriRange = false;
+				let isInVertRange = false;
+				if(this.x > list[i].x){
+					if(this.x-list[i].x <= this.horizontaldraw/2){
+						isInHoriRange = true;
+					}
+				}else{
+					if(list[i].x-this.x <= this.horizontaldraw/2){
+						isInHoriRange = true;
+					}
+				}
+				if(this.y > list[i].y){
+					if(this.y-list[i].y <= this.verticaldraw/2){
+						isInVertRange = true;
+					}
+				}else{
+					if(list[i].y-this.y <= this.verticaldraw/2){
+						isInVertRange = true;
+					}
+				}
+				if(isInVertRange && isInHoriRange){
+					let temp = {
+						username: list[i].username,
+						x: list[i].x,
+						y: list[i].y,
+						facing: list[i].facing,
+						moving: list[i].moving,
+						action: list[i].action
+					}
+					active.push(temp);
+				}
+			}
+		}
 		let player = {
 			map: this.calcPlayerMap(map),
 			player:{
@@ -255,7 +292,8 @@ module.exports = class Player{
 			},
 			enemy:{
 
-			}
+			},
+			active
 		}
 		return player;
 	}

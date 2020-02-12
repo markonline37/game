@@ -405,7 +405,16 @@ socket.on('update', function(data){
 
 function drawScreen(data){
     drawMap(data.map, data.player.x, data.player.y);
-    drawPlayer(data.player);
+    for(let i = 0, j = data.active.length; i < j; i++){
+        let x = centrehori-(data.player.x-data.active[i].x)*tilesize;
+        let y = centrevert-(data.player.y-data.active[i].y)*tilesize;
+        drawPlayer(data.active[i], x, y);
+        ctx.fillStyle = "black";
+        ctx.font = "15px Calibri";
+        ctx.textAlign = "center";
+        ctx.fillText(data.active[i].username, x, y-tilesize*1.5);
+    }
+    drawPlayer(data.player, centrehori, centrevert);
     drawUI(data.player.skills, data.player.xp, data.player.inventory, data.player.levelTable);
     //draw enemie(s) position/rotation/action
     //draw buildings position
@@ -428,6 +437,7 @@ function drawGameMessage(){
     ctx.font = "30px Calibri";
     let space = 30;
     for(let i = 0, j = messageBuffer.length; i < j; i++){
+        ctx.textAlign = "left";
         ctx.fillText(messageBuffer[i], 10, canvas.height-10-(i*space));
     }    
 }
@@ -562,7 +572,7 @@ function drawMap(map, inx, iny){
     }
 }
 
-function drawPlayer(data){
+function drawPlayer(data, x, y){
     if(data.moving){
         let num;
         if(data.facing === "N"){
@@ -574,7 +584,7 @@ function drawPlayer(data){
         }else if(data.facing === "SW" || data.facing === "W" || data.facing === "NW"){
             num = 448;
         }
-        ctx.drawImage(char, ((Date.now()-timemoving)%9)*tilesize*2, num, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
+        ctx.drawImage(char, ((Date.now()-timemoving)%9)*tilesize*2, num, tilesize*2, tilesize*2, x-(tilesize), y-(tilesize*1.5), tilesize*2, tilesize*2);
     }else if(data.action === "fishing"){
         let num1 = ((Date.now()-timefishing)%8)*tilesize*2;
         let num2;
@@ -606,7 +616,7 @@ function drawPlayer(data){
             }
         }
         
-        ctx.drawImage(char, num1, num2, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
+        ctx.drawImage(char, num1, num2, tilesize*2, tilesize*2, x-(tilesize), y-(tilesize*1.5), tilesize*2, tilesize*2);
     }else{
         let num;
         if(data.facing === "N"){
@@ -618,6 +628,6 @@ function drawPlayer(data){
         }else if(data.facing === "SW" || data.facing === "W" || data.facing === "NW"){
             num = 192;
         }
-        ctx.drawImage(char, 0, num, tilesize*2, tilesize*2, centrehori-(tilesize), centrevert-(tilesize*1.5), tilesize*2, tilesize*2);
+        ctx.drawImage(char, 0, num, tilesize*2, tilesize*2, x-(tilesize), y-(tilesize*1.5), tilesize*2, tilesize*2);
     }
 }
