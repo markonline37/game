@@ -19,10 +19,12 @@ module.exports = class Map{
 					width: tempData.width,
 					tilesize: tempData.tilewidth,
 					layers: {
-						"layer1": this.convertMap(tempData, 0),
-						"layer2": this.convertMap(tempData, 1),
-						"layer3": this.convertMap(tempData, 2),
-						"layer4": this.convertMap(tempData, 3)
+						"layer0": this.convertMap(tempData, 0),
+						"layer00": this.convertMap(tempData, 1),
+						"layer1": this.convertMap(tempData, 2),
+						"layer2": this.convertMap(tempData, 3),
+						"layer3": this.convertMap(tempData, 4),
+						"layer4": this.convertMap(tempData, 5)
 					}
 				}
 

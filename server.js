@@ -25,10 +25,12 @@ const hasher = require('./module/hash');
 const Player = require('./module/player');
 const Fishing = require('./module/fishing');
 const AllP = require('./module/allPlayers.js');
+const Items = require('./module/items.js');
+const allItems = new Items();
 const allPlayers = new AllP(fs, fssync, Player, charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance);
 const activeP = require('./module/activePlayers.js');
 const activePlayers = new activeP();
-const fishingObj = new Fishing();
+const fishingObj = new Fishing(allItems.getFish());
 const Mapp = require('./module/map');
 const SocketH = require('./module/socketHandler');
 const socketHandler = new SocketH(io, hasher, Player);
@@ -102,6 +104,13 @@ io.on('connection', function(socket) {
 		let user = activePlayers.findPlayer('socket', socket.id);
 		if(user !== false){
 			socketHandler.swapItem(user, data, socket.id, io);
+		}
+	});
+
+	socket.on('clicked', function(data){
+		let user = activePlayers.findPlayer('socket', socket.id);
+		if(user !== false){
+			socketHandler.clicked(user, data, socket.id, io, allItems);
 		}
 	});
 });
@@ -251,6 +260,16 @@ let question = function(q){
 					slot29: "",
 					slot30: ""
 				}
+				break;
+
+			case "equipRiverRod":
+				activePlayers.findPlayer('email', 'markonline37@gmail.com').equipMainHand("riverRod");
+				break;
+			case "equipOceanRod":
+				activePlayers.findPlayer('email', 'markonline37@gmail.com').equipMainHand("oceanRod");
+				break;
+			case "dropped":
+				console.log(JSON.stringify(activePlayers.findPlayer('email', 'markonline37@gmail.com').droppedItemList,null,2));
 				break;
 			case "q":
 			case "exit":

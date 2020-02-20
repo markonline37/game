@@ -3,15 +3,17 @@
         "username": "Mark",
         "email": "markonline37@gmail.com",
         "password": "322c0434f4893e2763a1b54556e0a4ea527a270413c10242dfc1d2ddc24e9ede",
-        "socket": "-gT5Z_gJjoP71V9nAAAK",
+        "socket": "RCQc3PCJrLQA3kaOAAAF",
         "gold": 0,
-        "x": 57.99000000000065,
-        "y": 40.410000000000004,
+        "x": 57.81999999999701,
+        "y": 40.46499999999407,
         "moving": false,
         "horizontaldraw": 46,
         "verticaldraw": 40,
         "charactersize": 32,
         "movespeed": 0.01,
+        "currentlyFishing": true,
+        "fishingEnvironment": "fresh",
         "facing": "N",
         "movement": {
             "up": false,
@@ -20,11 +22,11 @@
             "right": false
         },
         "xp": {
-            "fishing": 1480,
+            "fishing": 80,
             "woodcutting": 0
         },
         "skills": {
-            "fishing": 8,
+            "fishing": 0,
             "woodcutting": 0
         },
         "action": "fishing",
@@ -57,159 +59,35 @@
                 "xp": 20,
                 "item": 0
             },
-            "slot5": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot6": {
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0
-            },
-            "slot7": {
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0
-            },
-            "slot8": {
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0
-            },
-            "slot9": {
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0
-            },
-            "slot10": {
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0
-            },
-            "slot11": {
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0
-            },
-            "slot12": {
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0
-            },
-            "slot13": {
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0
-            },
-            "slot14": {
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0
-            },
-            "slot15": {
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0
-            },
-            "slot16": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot17": {
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0
-            },
-            "slot18": {
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0
-            },
-            "slot19": {
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0
-            },
-            "slot20": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot21": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot22": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot23": {
-                "minlevel": "5",
-                "maxlevel": "15",
-                "name": "Salmon",
-                "xp": 40,
-                "item": 1
-            },
-            "slot24": {
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0
-            },
-            "slot25": {
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0
-            },
+            "slot5": "",
+            "slot6": "",
+            "slot7": "",
+            "slot8": "",
+            "slot9": "",
+            "slot10": "",
+            "slot11": "",
+            "slot12": "",
+            "slot13": "",
+            "slot14": "",
+            "slot15": "",
+            "slot16": "",
+            "slot17": "",
+            "slot18": "",
+            "slot19": "",
+            "slot20": "",
+            "slot21": "",
+            "slot22": "",
+            "slot23": "",
+            "slot24": "",
+            "slot25": "",
             "slot26": "",
             "slot27": "",
             "slot28": "",
             "slot29": "",
             "slot30": ""
         },
+        "equippedMainHand": "riverRod",
+        "droppedItemList": [],
         "maxlevel": 20,
         "levelTable": {
             "1": 100,
@@ -238,7 +116,7 @@
         "username": "chris",
         "email": "chris@gmail.com",
         "password": "322c0434f4893e2763a1b54556e0a4ea527a270413c10242dfc1d2ddc24e9ede",
-        "socket": "bVtO7u7-kAd60rBjAAAL",
+        "socket": "",
         "gold": 0,
         "x": 61.05000000000022,
         "y": 43.56999999999997,
@@ -247,6 +125,8 @@
         "verticaldraw": 40,
         "charactersize": 32,
         "movespeed": 0.01,
+        "currentlyFishing": false,
+        "fishingEnvironment": "",
         "facing": "E",
         "movement": {
             "up": false,
@@ -295,6 +175,8 @@
             "slot29": "",
             "slot30": ""
         },
+        "equippedMainHand": "riverRod",
+        "droppedItemList": [],
         "maxlevel": 20,
         "levelTable": {
             "1": 100,

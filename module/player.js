@@ -16,6 +16,8 @@ module.exports = class Player{
 		this.verticaldraw = verticaldraw;
 		this.charactersize = charactersize;
 		this.movespeed = movespeed;
+		this.currentlyFishing = false;
+		this.fishingEnvironment = "";
 		if(facing === undefined){
 			this.facing = "S";
 		}else{
@@ -80,6 +82,8 @@ module.exports = class Player{
 		}else{
 			this.inventory = inventory
 		}
+		this.equippedMainHand = "riverRod";
+		this.droppedItemList = [];
 		this.maxlevel = 20;
 		this.levelTable = {
 			"1": 100, //110
@@ -105,6 +109,23 @@ module.exports = class Player{
 		};
 	}
 
+	equipMainHand(input){
+		this.equippedMainHand = input;
+	}
+
+	clicked(data, allItems){
+		let itemPosition = null;
+		for(let i = 0, j = this.droppedItemList.length; i<j; i++){
+			let t = this.droppedItemList[i];
+			if(data.x >= t.x-0.5 && data.x <= t.x+0.5 && data.y >= t.y-0.5 && data.y <= t.y+0.5){
+				itemPosition = i;
+			}
+		}
+		if(itemPosition !== null){
+			return this.pickUpItem(this.droppedItemList[itemPosition], allItems, itemPosition);
+		}
+	}
+
 	swapItem(data){
 		let oldslot = data.old;
 		let newslot = data.new;
@@ -116,10 +137,55 @@ module.exports = class Player{
 	}
 
 	dropItem(slot){
-		if(this.inventory["slot"+slot] !== ""){
+		if(this.inventory["slot"+slot] !== "" && slot !== null){
 			let temp = this.inventory["slot"+slot];
+			this.droppedItem(temp);
 			this.inventory["slot"+slot] = "";
-			return 'Dropped item '+temp.name;
+			return 'Dropped item: '+temp.name;
+		}
+	}
+
+	droppedItem(input){
+		let item = {
+			type: input,
+			x: this.x,
+			y: this.y
+		}
+		this.droppedItemList.push(item);
+		setTimeout(function(){
+			let foundItem = null;
+			for(let i = 0, j = this.droppedItemList.length; i<j; i++){
+				if(this.droppedItemList[i].id === item.id){
+					this.droppedItemList.splice(i, 1);
+					break;
+				}
+			}
+		}.bind(this), 60000);
+	}
+
+	pickUpItem(item, allItems, i){
+		if(!this.emptySpace()){
+			return "Cannot pick up, bag is full";
+		}
+		let distanceX;
+		let distanceY;
+		let pickUpDistance = 5;
+		if(this.x > item.x){
+			distanceX = this.x - item.x;
+		}else{
+			distanceX = item.x - this.x;
+		}
+		if(this.y > item.y){
+			distanceY = this.y - item.y;
+		}else{
+			distanceY = item.y - this.y;
+		}
+		if((distanceY >= 0 && distanceY <= pickUpDistance)&&(distanceX >=0 && distanceX <= pickUpDistance)){
+			this.addItem(item.type);
+			this.droppedItemList.splice(i, 1);
+			return "Picked up item: "+item.type.name;
+		}else{
+			return "Not within range of item";
 		}
 	}
 
@@ -156,45 +222,70 @@ module.exports = class Player{
 		return false;
 	}
 
-	actionFishing(map){
-		let tile;
-		let userx = Math.floor(this.x);
-		let usery = Math.floor(this.y);
-		switch(this.facing){
-			case "N":
-				tile = map.layers["layer2"][usery-1][userx];
-				break;
-			case "S":
-				tile = map.layers["layer2"][usery+1][userx];
-				break
-			case "E":
-				tile = map.layers["layer2"][usery][userx+1];
-				break
-			case "W":
-				tile = map.layers["layer2"][usery][userx-1];
-				break;
-			case "NE":
-				tile = map.layers["layer2"][usery-1][userx+1];
-				break;
-			case "NW":
-				tile = map.layers["layer2"][usery-1][userx-1];
-				break;
-			case "SE":
-				tile = map.layers["layer2"][usery+1][userx+1];
-				break;
-			case "SW":
-				tile = map.layers["layer2"][usery-1][userx-1];
-				break;
+	checkFishingEquipment(){
+		let test = false;
+		if(this.equippedMainHand === "riverRod"){
+			test = true;
+			this.fishingEnvironment = "fresh";
+		}else if(this.equippedMainHand === "oceanRod"){
+			test = true;
+			this.fishingEnvironment = "salt";
 		}
-		if(tile < 300 || tile > 398){
-			this.action = "";
-			return "Not facing water";
-		}else if(!this.emptySpace()){
-			this.action = "";
-			return "Bag is full";
-		}else{
-			this.action = "fishing";
+		if(test){
 			return true;
+		}else{
+			return false;
+		}
+	}
+
+	actionFishing(map){
+		this.action="";
+		if(!this.emptySpace()){
+			return "Bag is full";
+		}else if(!this.checkFishingEquipment()){
+			return "No fishing equipment in main hand";
+		}else{
+			let tile;
+			let userx = Math.floor(this.x);
+			let usery = Math.floor(this.y);
+			switch(this.facing){
+				case "N":
+					tile = map.layers["layer2"][usery-1][userx];
+					break;
+				case "S":
+					tile = map.layers["layer2"][usery+1][userx];
+					break
+				case "E":
+					tile = map.layers["layer2"][usery][userx+1];
+					break
+				case "W":
+					tile = map.layers["layer2"][usery][userx-1];
+					break;
+				case "NE":
+					tile = map.layers["layer2"][usery-1][userx+1];
+					break;
+				case "NW":
+					tile = map.layers["layer2"][usery-1][userx-1];
+					break;
+				case "SE":
+					tile = map.layers["layer2"][usery+1][userx+1];
+					break;
+				case "SW":
+					tile = map.layers["layer2"][usery-1][userx-1];
+					break;
+			}
+			if(tile < 300 || tile > 398){
+				return "Not facing water";
+			}else{
+				if(this.equippedMainHand !== "oceanRod" && (tile>=304&&tile<=350)){
+					return "Wrong fishing equipment for this environment";
+				}else if(this.equippedMainHand !== "riverRod" && (tile>=352&&tile<=398)){
+					return "Wrong fishing equipment for this environment";
+				}else{
+					this.action = "fishing";
+					return true;
+				}
+			}
 		}
 	}
 
@@ -203,12 +294,27 @@ module.exports = class Player{
 			this.action = "";
 			return "Bag is full";
 		}else{
-			if((Math.floor(Math.random()*Math.floor(1000-this.skills.fishing))) <= 1){
+			if(!this.currentlyFishing){
+				this.currentlyFishing = true;
+				let timer = Math.floor(Math.random() * 7000)+2000;
+				setTimeout(function(){
+					if(this.action === "fishing"){
+						let fish = fishingLootTable.calcLoot(this.skills.fishing);
+						this.addItem(fish);
+						this.addXP('fishing', fish.xp, io, socket);
+						this.currentlyFishing = false;
+						return String("Caught a "+fish.name);
+					}else{
+						this.currentlyFishing = false;
+					}
+				}.bind(this), timer);
+			}
+			/*if((Math.floor(Math.random()*Math.floor(1000-this.skills.fishing))) <= 1){
 				let fish = fishingLootTable.calcLoot(this.skills.fishing);
 				this.addItem(fish);
 				this.addXP('fishing', fish.xp, io, socket);
 				return String("Caught a "+fish.name);
-			}
+			}*/
 		}
 	}
 
@@ -219,7 +325,7 @@ module.exports = class Player{
 		let ymin = Math.floor(this.y) - this.verticaldraw/2;
 		let ymax = Math.floor(this.y) + this.verticaldraw/2;
 
-		let maparr = ["layer1", "layer2", "layer3", "layer4"];
+		let maparr = ["layer0", "layer00", "layer1", "layer2", "layer3", "layer4"];
 
 		for(let l = 0, k = maparr.length; l < k; l++){
 			let calcarr = [];
@@ -290,6 +396,7 @@ module.exports = class Player{
 				xp: this.xp,
 				levelTable: this.levelTable
 			},
+			items: this.droppedItemList,
 			enemy:{
 
 			},

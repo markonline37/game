@@ -127,4 +127,11 @@ module.exports = class SocketHandler{
 			io.to(socket).emit('Game Message', temp);
 		}
 	}
+
+	clicked(user, data, socket, io, allItems){
+		let temp = user.clicked(data, allItems);
+		if(typeof temp === 'string' || temp instanceof String){
+			io.to(socket).emit('Game Message', temp);
+		}
+	}
 }

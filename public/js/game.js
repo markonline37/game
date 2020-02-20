@@ -333,6 +333,20 @@ function action(){
                     mouseposy = e.offsetY;
                 }
             }
+        }else if(e.offsetX <=canvas2.width*0.8){
+            let posx;
+            let posy;
+            if(canvas.width/2 >= e.offsetX){
+                posx = lastPacket.player.x - (canvas.width/2-e.offsetX)/tilesize;
+            }else{
+                posx = lastPacket.player.x + (e.offsetX-canvas.width/2)/tilesize;
+            }
+            if(canvas.height/2 >= e.offsetY){
+                posy = lastPacket.player.y - (canvas.height/2-e.offsetY)/tilesize;
+            }else{
+                posy = lastPacket.player.y + (e.offsetY - canvas.height/2)/tilesize;
+            }
+            socket.emit('clicked', {x: posx, y: posy});
         }
     });
 
@@ -345,12 +359,16 @@ function action(){
 
     canvas2.addEventListener('mouseup', function(e){
         if(mouseisdown){
+            let sent = false;
             for(let i = 0, j = inventorySlots.length; i<j; i++){
                 let k = inventorySlots[i];
                 if(k.startx <= e.offsetX && k.endx >= e.offsetX && k.starty <= e.offsetY && k.endy >= e.offsetY){
                     socket.emit('swap item', {old: helditem, new: k.slot});
                 }else if(e.offsetX <= (canvas2.width*0.8+border) || e.offsetY <= (canvas2.height/2+(border*5))){
-                    socket.emit('drop item', helditem);
+                    if(!sent){
+                        socket.emit('drop item', helditem);
+                        sent = true;
+                    }
                 }
             }
             helditem = null;
@@ -403,8 +421,13 @@ socket.on('update', function(data){
     drawScreen(data);
 });
 
+let map;
 function drawScreen(data){
-    drawMap(data.map, data.player.x, data.player.y);
+    map = data.map;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(let i = 0, j = Object.keys(map).length-1; i<j;i++){
+        drawMap(data.player.x, data.player.y, i);
+    }
     for(let i = 0, j = data.active.length; i < j; i++){
         let x = centrehori-(data.player.x-data.active[i].x)*tilesize;
         let y = centrevert-(data.player.y-data.active[i].y)*tilesize;
@@ -414,13 +437,62 @@ function drawScreen(data){
         ctx.textAlign = "center";
         ctx.fillText(data.active[i].username, x, y-tilesize*1.5);
     }
+    if(data.items.length > 0){
+        drawItems(data.player.x, data.player.y, data.items);
+    }
     drawPlayer(data.player, centrehori, centrevert);
+    drawMap(data.player.x, data.player.y, Object.keys(map).length-1);
     drawUI(data.player.skills, data.player.xp, data.player.inventory, data.player.levelTable);
     //draw enemie(s) position/rotation/action
     //draw buildings position
     //if error, draw error.
     if(messageBuffer.length > 0){
         drawGameMessage();
+    }
+}
+
+function drawItems(x, y, input){
+    for(let i = 0, j = input.length; i<j; i++){
+        let posx;
+        let posy;
+        let sx = (input[i].type.item%10)*tilesize;
+        let sy = Math.floor(input[i].type.item/10)*tilesize;
+        if(input[i].type.item%10 !== 0){
+            sx+=1;
+            sy+=1;
+        }
+        if(x >= input[i].x){
+            posx = canvas.width/2-(x-input[i].x)*tilesize;
+        }else{
+            posx = canvas.width/2+(input[i].x-x)*tilesize;
+        }
+        if(y >= input[i].y){
+            posy = canvas.height/2-(y-input[i].y)*tilesize;
+        }else{
+            posy = canvas.height/2+(input[i].y-y)*tilesize;
+        }
+        ctx.drawImage(itemImg, sx, sy, tilesize, tilesize, posx-tilesize/2, posy-tilesize/2, tilesize, tilesize);
+    }
+}
+
+function drawMap(inx, iny, layer){
+    let county = 0;
+    for(let coordy = starty;coordy<endy;coordy+=tilesize){
+        let countx = 0;
+        for(let coordx = startx;coordx<endx;coordx+=tilesize){
+            let y = arrvert-vertviewdist+county;
+            let x = arrhori-horiviewdist+countx;
+            let temp = map[Object.keys(map)[layer]][y][x];
+            if(temp !== 0){
+                let sourcex = ((temp-1)%8)*32;
+                let sourcey = (Math.floor((temp-1)/8))*32;
+                let posx = coordx+(Math.floor(inx)-inx)*tilesize;
+                let posy = coordy+(Math.floor(iny)-iny)*tilesize;
+                ctx.drawImage(worldTiles, sourcex, sourcey, tilesize, tilesize, Math.round(posx), Math.round(posy), tilesize, tilesize);
+            }
+            countx++;
+        }
+        county++;
     }
 }
 
@@ -533,42 +605,27 @@ function drawUI(skills, xp, inventory, levelTable){
                     //currently dragged item
                     let sx = (items[i].item%10)*tilesize;
                     let sy = Math.floor(items[i].item/10)*tilesize;
+                    if(items[i].item%10 !== 0){
+                        sx+=1;
+                        sy+=1;
+                    }
                     let dx = mouseposx-(tilesize/2)+itemoffsetx;
                     let dy = mouseposy-(tilesize/2)+itemoffsety;
                     ctx2.drawImage(itemImg, sx, sy, tilesize, tilesize, dx, dy, tilesize, tilesize);
                 }else{
+                    console.log(items[i]);
                     let sx = (items[i].item%10)*tilesize;
                     let sy = Math.floor(items[i].item/10)*tilesize;
+                    if(items[i].item%10 !== 0){
+                        sx+=1;
+                        sy+=1;
+                    }
                     let dx = (canvas2.width*0.8)+border+((i%5)*tilesize)+((i%5)+1)*horizontalSpace;
                     let dy = canvas2.height/2+(border*6)+(Math.floor(i/5)*tilesize)+Math.floor(i/5)*verticalSpace;
                     ctx2.drawImage(itemImg, sx, sy, tilesize, tilesize, dx, dy, tilesize, tilesize);
                 }
             }
         }
-    }
-}
-
-function drawMap(map, inx, iny){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    let county = 0;
-    for(let coordy = starty;coordy<endy;coordy+=tilesize){
-        let countx = 0;
-        for(let coordx = startx;coordx<endx;coordx+=tilesize){
-            for(k in map){
-                let y = arrvert-vertviewdist+county;
-                let x = arrhori-horiviewdist+countx;
-                let temp = map[k][y][x];
-                if(temp !== 0){
-                    let sourcex = ((temp-1)%8)*32;
-                    let sourcey = (Math.floor((temp-1)/8))*32;
-                    let posx = coordx+(Math.floor(inx)-inx)*tilesize;
-                    let posy = coordy+(Math.floor(iny)-iny)*tilesize;
-                    ctx.drawImage(worldTiles, sourcex, sourcey, tilesize, tilesize, Math.round(posx), Math.round(posy), tilesize, tilesize);
-                }
-            }
-            countx++;
-        }
-        county++;
     }
 }
 
