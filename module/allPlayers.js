@@ -1,7 +1,7 @@
 module.exports = class AllPlayers{
-	constructor(fs, fssync, Player, charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance){
+	constructor(fs, fssync, Player, charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance, mapObj, map, vendor, calc, item){
 		this.playerContainer = [];
-		this.file = 'storage.json';
+		this.file = './storage/storage.json';
 		this.fssync = fssync;
 		
 		let data = fs.readFileSync(this.file);
@@ -17,7 +17,7 @@ module.exports = class AllPlayers{
 				temp[i].movement.down = false;
 				temp[i].movement.left = false;
 				let player = new Player(temp[i].username, temp[i].email, temp[i].password, temp[i].socket, temp[i].x, temp[i].y,
-					charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance, temp[i].gold, temp[i].facing, temp[i].xp, 
+					charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance, mapObj, map, vendor, calc, item, temp[i].gold, temp[i].facing, temp[i].xp, 
 					temp[i].skills, temp[i].inventory);
 				this.playerContainer.push(player);
 			}

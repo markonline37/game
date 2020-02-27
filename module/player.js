@@ -1,5 +1,6 @@
 module.exports = class Player{
-	constructor(username, email, password, socket, x, y, charactersize, movespeed, horizontaldraw, verticaldraw, gold, facing, xp, skills, inventory){
+	constructor(username, email, password, socket, x, y, charactersize, movespeed, horizontaldraw, verticaldraw, 
+		mapObj, map, vendor, calculator, item, gold, facing, xp, skills, inventory){
 		this.username = username;
 		this.email = email;
 		this.password = password;
@@ -18,6 +19,11 @@ module.exports = class Player{
 		this.movespeed = movespeed;
 		this.currentlyFishing = false;
 		this.fishingEnvironment = "";
+		this.itemsObj = item;
+		this.mapObj = mapObj;
+		this.map = map;
+		this.vendorObj = vendor;
+		this.calcObj = calculator;
 		if(facing === undefined){
 			this.facing = "S";
 		}else{
@@ -113,7 +119,7 @@ module.exports = class Player{
 		this.equippedMainHand = input;
 	}
 
-	clicked(data, allItems){
+	clicked(data){
 		let itemPosition = null;
 		for(let i = 0, j = this.droppedItemList.length; i<j; i++){
 			let t = this.droppedItemList[i];
@@ -122,7 +128,7 @@ module.exports = class Player{
 			}
 		}
 		if(itemPosition !== null){
-			return this.pickUpItem(this.droppedItemList[itemPosition], allItems, itemPosition);
+			return this.pickUpItem(this.droppedItemList[itemPosition], itemPosition);
 		}
 	}
 
@@ -163,7 +169,7 @@ module.exports = class Player{
 		}.bind(this), 60000);
 	}
 
-	pickUpItem(item, allItems, i){
+	pickUpItem(item, i){
 		if(!this.emptySpace()){
 			return "Cannot pick up, bag is full";
 		}
@@ -238,44 +244,34 @@ module.exports = class Player{
 		}
 	}
 
-	actionFishing(map){
-		this.action="";
-		if(!this.emptySpace()){
-			return "Bag is full";
-		}else if(!this.checkFishingEquipment()){
-			return "No fishing equipment in main hand";
-		}else{
-			let tile;
-			let userx = Math.floor(this.x);
-			let usery = Math.floor(this.y);
-			switch(this.facing){
-				case "N":
-					tile = map.layers["layer2"][usery-1][userx];
-					break;
-				case "S":
-					tile = map.layers["layer2"][usery+1][userx];
-					break
-				case "E":
-					tile = map.layers["layer2"][usery][userx+1];
-					break
-				case "W":
-					tile = map.layers["layer2"][usery][userx-1];
-					break;
-				case "NE":
-					tile = map.layers["layer2"][usery-1][userx+1];
-					break;
-				case "NW":
-					tile = map.layers["layer2"][usery-1][userx-1];
-					break;
-				case "SE":
-					tile = map.layers["layer2"][usery+1][userx+1];
-					break;
-				case "SW":
-					tile = map.layers["layer2"][usery-1][userx-1];
-					break;
-			}
-			if(tile < 300 || tile > 398){
-				return "Not facing water";
+	actions(socket, io){
+		this.action = "";
+		let tile;
+		let userx = Math.floor(this.x);
+		let usery = Math.floor(this.y);
+		if(this.facing === "N"){
+			tile = this.map.layers["layer2"][usery-1][userx];
+		}else if(this.facing === "NE"){
+			tile = this.map.layers["layer2"][usery-1][userx+1];
+		}else if(this.facing === "E"){
+			tile = this.map.layers["layer2"][usery][userx+1];
+		}else if(this.facing === "SE"){
+			tile = this.map.layers["layer2"][usery+1][userx+1];
+		}else if(this.facing === "S"){
+			tile = this.map.layers["layer2"][usery+1][userx];
+		}else if(this.facing === "SW"){
+			tile = this.map.layers["layer2"][usery-1][userx-1];
+		}else if(this.facing === "W"){
+			tile = this.map.layers["layer2"][usery][userx-1];
+		}else if(this.facing === "NW"){
+			tile = this.map.layers["layer2"][usery-1][userx-1];
+		}
+		//fishing
+		if(tile >= 300 && tile <= 398){
+			if(!this.emptySpace()){
+				return "Bag is full";
+			}else if(!this.checkFishingEquipment()){
+				return "No fishing equipment in main hand";
 			}else{
 				if(this.equippedMainHand !== "oceanRod" && (tile>=304&&tile<=350)){
 					return "Wrong fishing equipment for this environment";
@@ -287,9 +283,16 @@ module.exports = class Player{
 				}
 			}
 		}
+		//shopping
+		else if(tile >= 432 && tile <= 455){
+			this.action = "shopping";
+			let vendor = this.vendorObj.findVendor(Math.floor(this.x), Math.floor(this.y));
+			console.log(vendor);
+			//io.to(socket).emit('Display Shop', vendor.items);
+		}
 	}
 
-	tickFish(fishingLootTable, io, socket){
+	tickFish(io, socket){
 		if(!this.emptySpace()){
 			this.action = "";
 			return "Bag is full";
@@ -299,7 +302,7 @@ module.exports = class Player{
 				let timer = Math.floor(Math.random() * 7000)+2000;
 				setTimeout(function(){
 					if(this.action === "fishing"){
-						let fish = fishingLootTable.calcLoot(this.skills.fishing);
+						let fish = this.calcObj.calcLoot(this.skills.fishing);
 						this.addItem(fish);
 						this.addXP('fishing', fish.xp, io, socket);
 						this.currentlyFishing = false;
@@ -309,16 +312,10 @@ module.exports = class Player{
 					}
 				}.bind(this), timer);
 			}
-			/*if((Math.floor(Math.random()*Math.floor(1000-this.skills.fishing))) <= 1){
-				let fish = fishingLootTable.calcLoot(this.skills.fishing);
-				this.addItem(fish);
-				this.addXP('fishing', fish.xp, io, socket);
-				return String("Caught a "+fish.name);
-			}*/
 		}
 	}
 
-	calcPlayerMap(map){
+	calcPlayerMap(){
 		let returnObj = {};
 		let xmin = Math.floor(this.x) - this.horizontaldraw/2;
 		let xmax = Math.floor(this.x) + this.horizontaldraw/2;
@@ -332,10 +329,10 @@ module.exports = class Player{
 			for(let j = ymin; j < ymax; j++){
 				let temparr = [];
 				for(let i = xmin; i < xmax; i++){
-					if(i < 0 || i > map.width-1 || j < 0 || j > map.height-1){
+					if(i < 0 || i > this.map.width-1 || j < 0 || j > this.map.height-1){
 						temparr.push(0);
 					}else{
-						temparr.push(map.layers[maparr[l]][j][i]);
+						temparr.push(this.map.layers[maparr[l]][j][i]);
 					}
 				}
 				calcarr.push(temparr);
@@ -345,7 +342,7 @@ module.exports = class Player{
 		return returnObj;
 	}
 
-	calcPacket(map, activeplayers){
+	calcPacket(activeplayers){
 		let list = activeplayers.getPlayers();
 		let active = [];
 		for(let i = 0, j = list.length; i < j; i++){
@@ -384,7 +381,7 @@ module.exports = class Player{
 			}
 		}
 		let player = {
-			map: this.calcPlayerMap(map),
+			map: this.calcPlayerMap(),
 			player:{
 				x: this.x,
 				y: this.y,
@@ -405,121 +402,154 @@ module.exports = class Player{
 		return player;
 	}
 
-	calcMovement(map, timeDifference){
+	teleport(x, y){
+		this.x = x+0.5;
+		this.y = y+0.5;
+	}
+
+	calcMovement(timeDifference){
 		this.moving = false;
 		//count the number of movement keys pressed
 		let count = Object.values(this.movement).reduce((x,y)=>x+y, 0);
+		let movement;
 		//since 3 are pressed and 2 directions cancel each other out, only go 1 direction
 		if(count === 3){
 			if(this.movement.left && this.movement.right){
 				//if W key is held and tile above is walkable.
 				if(this.movement.up){
-					this.facing = "N";
-					if(map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed*timeDifference))][Math.floor(this.x)] === 0){
-						this.y-=(this.movespeed*timeDifference);
-						this.moving = true;
-					}
+					movement = "N";
 				}else if(this.movement.down){
-					this.facing = "S";
-					if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed*timeDifference))][Math.floor(this.x)] === 0){
-						this.y+=(this.movespeed*timeDifference);
-						this.moving = true;
-					}
+					movement = "S";
 				}
 			}else if(this.movement.up && this.movement.down){
 				if(this.movement.left){
-					this.facing = "W";
-					if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x-(this.charactersize/100)-(this.movespeed*timeDifference))] === 0){
-						this.x-=(this.movespeed*timeDifference);
-						this.moving = true;
-					}
+					movement = "W";
 				}else if(this.movement.right){
-					this.facing = "E";
-					if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x+(this.charactersize/100)+(this.movespeed*timeDifference))] === 0){
-						this.x+=(this.movespeed*timeDifference);
-						this.moving = true;
-					}
+					movement = "E";
 				}
 			}
 		}else if(count === 2){
 			if(this.movement.left && this.movement.up){
-				this.facing = "NW";
-				if(map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference))] === 0){
-					this.x-=((this.movespeed/2)*timeDifference);
-					this.y-=((this.movespeed/2)*timeDifference);
-					this.moving = true;
-				}else if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference))] === 0){
-					this.x-=((this.movespeed/2)*timeDifference);
-					this.moving = true;
-				}else if(map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
-					this.y-=((this.movespeed/2)*timeDifference);
-					this.moving = true;
-				}
+				movement = "NW";
 			}else if(this.movement.left && this.movement.down){
-				this.facing = "SW";
-				if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference))] === 0){
-					this.x-=((this.movespeed/2)*timeDifference);
-					this.y+=((this.movespeed/2)*timeDifference);
-					this.moving = true;
-				}else if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference))] === 0){
-					this.x-=((this.movespeed/2)*timeDifference);
-					this.moving = true;
-				}else if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
-					this.y+=((this.movespeed/2)*timeDifference);
-					this.moving = true;
-				}
+				movement = "SW";
 			}else if(this.movement.right && this.movement.up){
-				this.facing = "NE";
-				if(map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference))] === 0){
-					this.x+=((this.movespeed/2)*timeDifference);
-					this.y-=((this.movespeed/2)*timeDifference);
-					this.moving = true;
-				}else if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference))] === 0){
-					this.x+=((this.movespeed/2)*timeDifference);
-					this.moving = true;
-				}else if(map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
-					this.y-=((this.movespeed/2)*timeDifference);
-					this.moving = true;
-				}
+				movement = "NE";
 			}else if(this.movement.right && this.movement.down){
-				this.facing = "SE";
-				if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference))] === 0){
-					this.x+=((this.movespeed/2)*timeDifference);
-					this.y+=((this.movespeed/2)*timeDifference);
-					this.moving = true;
-				}else if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference))] === 0){
-					this.x+=((this.movespeed/2)*timeDifference);
-					this.moving = true;
-				}else if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
-					this.y+=((this.movespeed/2)*timeDifference);
-					this.moving = true;
-				}
+				movement = "SE";
 			}
 		}else if(count === 1){
 			if(this.movement.left){
-				this.facing = "W";
-				if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x-(this.charactersize/100)-(this.movespeed*timeDifference))] === 0){
-					this.x-=(this.movespeed*timeDifference);
-					this.moving = true;
-				}
+				movement = "W";
 			}else if(this.movement.right){
-				this.facing = "E";
-				if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x+(this.charactersize/100)+(this.movespeed*timeDifference))] === 0){
-					this.x+=(this.movespeed*timeDifference);
-					this.moving = true;
-				}
+				movement = "E";
 			}else if(this.movement.up){
-				this.facing = "N";
-				if(map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed*timeDifference))][Math.floor(this.x)] === 0){
-					this.y-=(this.movespeed*timeDifference);
-					this.moving = true;
-				}
+				movement = "N";
 			}else if(this.movement.down){
-				this.facing = "S";
-				if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed*timeDifference))][Math.floor(this.x)] === 0){
-					this.y+=(this.movespeed*timeDifference);
-					this.moving = true;
-				}
+				movement = "S";
+			}
+		}
+		if(movement === "N"){
+			this.facing = "N";
+			let posy = Math.floor(this.y-(this.charactersize/100)-(this.movespeed*timeDifference));
+			let posx = Math.floor(this.x);
+			let tele = this.mapObj.checkdoors(posx, posy);
+			if(tele !== false){
+				this.teleport(tele.telex, tele.teley);
+			}else if(this.map.layers["layer2"][posy][posx] === 0){
+				this.y-=(this.movespeed*timeDifference);
+				this.moving = true;
+			}
+		}else if(movement === "NE"){
+			this.facing = "NE";
+			let tele = this.mapObj.checkdoors(Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference)), Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference)));
+			if(tele !== false){
+				this.teleport(tele.telex, tele.teley);
+			}else if(this.map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference))] === 0){
+				this.x+=((this.movespeed/2)*timeDifference);
+				this.y-=((this.movespeed/2)*timeDifference);
+				this.moving = true;
+			}else if(this.map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference))] === 0){
+				this.x+=((this.movespeed/2)*timeDifference);
+				this.moving = true;
+			}else if(this.map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
+				this.y-=((this.movespeed/2)*timeDifference);
+				this.moving = true;
+			}
+		}else if(movement === "E"){
+			this.facing = "E";
+			let tele = this.mapObj.checkdoors(Math.floor(this.x+(this.charactersize/100)+(this.movespeed*timeDifference)), Math.floor(this.y));
+			if(tele !== false){
+				this.teleport(tele.telex, tele.teley);
+			}else if(this.map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x+(this.charactersize/100)+(this.movespeed*timeDifference))] === 0){
+				this.x+=(this.movespeed*timeDifference);
+				this.moving = true;
+			}
+		}else if(movement === "SE"){
+			this.facing = "SE";
+			let tele = this.mapObj.checkdoors(Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference)), Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference)));
+			if(tele !== false){
+				this.teleport(tele.telex, tele.teley);
+			}else if(this.map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference))] === 0){
+				this.x+=((this.movespeed/2)*timeDifference);
+				this.y+=((this.movespeed/2)*timeDifference);
+				this.moving = true;
+			}else if(this.map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference))] === 0){
+				this.x+=((this.movespeed/2)*timeDifference);
+				this.moving = true;
+			}else if(this.map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
+				this.y+=((this.movespeed/2)*timeDifference);
+				this.moving = true;
+			}
+		}else if(movement === "S"){
+			this.facing = "S";
+			let tele = this.mapObj.checkdoors(Math.floor(this.x), Math.floor(this.y+(this.charactersize/100)+(this.movespeed*timeDifference)));
+			if(tele !== false){
+				this.teleport(tele.telex, tele.teley);
+			}else if(this.map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed*timeDifference))][Math.floor(this.x)] === 0){
+				this.y+=(this.movespeed*timeDifference);
+				this.moving = true;
+			}
+		}else if(movement === "SW"){
+			this.facing = "SW";
+			let tele = this.mapObj.checkdoors(Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference)), Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference)));
+			if(tele !== false){
+				this.teleport(tele.telex, tele.teley);
+			}else if(this.map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference))] === 0){
+				this.x-=((this.movespeed/2)*timeDifference);
+				this.y+=((this.movespeed/2)*timeDifference);
+				this.moving = true;
+			}else if(this.map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference))] === 0){
+				this.x-=((this.movespeed/2)*timeDifference);
+				this.moving = true;
+			}else if(this.map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
+				this.y+=((this.movespeed/2)*timeDifference);
+				this.moving = true;
+			}
+		}else if(movement === "W"){
+			this.facing = "W";
+			let tele = this.mapObj.checkdoors(Math.floor(this.x-(this.charactersize/100)-(this.movespeed*timeDifference)), Math.floor(this.y));
+			if(tele !== false){
+				this.teleport(tele.telex, tele.teley);
+			}else if(this.map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x-(this.charactersize/100)-(this.movespeed*timeDifference))] === 0){
+				this.x-=(this.movespeed*timeDifference);
+				this.moving = true;
+			}
+		}else if(movement === "NW"){
+			this.facing = "NW";
+			let tele = this.mapObj.checkdoors(Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference)), Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference)));
+			if(tele !== false){
+				this.teleport(tele.telex, tele.teley);
+			}else if(this.map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference))] === 0){
+				this.x-=((this.movespeed/2)*timeDifference);
+				this.y-=((this.movespeed/2)*timeDifference);
+				this.moving = true;
+			}else if(this.map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference))] === 0){
+				this.x-=((this.movespeed/2)*timeDifference);
+				this.moving = true;
+			}else if(this.map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
+				this.y-=((this.movespeed/2)*timeDifference);
+				this.moving = true;
 			}
 		}
 	}

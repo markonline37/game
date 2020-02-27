@@ -7,6 +7,31 @@ module.exports = class Map{
 		this.fs = fs;
 		this.fssync = fssync;
 		this.map = this.loadMap();
+		this.doors = [
+			[[55, 50], [229, 32]]
+		]
+	}
+
+	checkdoors(x, y){
+		let returnvalue;
+		for(let i = 0, j = this.doors.length; i<j; i++){
+			if(this.doors[i][0][0] === x && this.doors[i][0][1] === y){
+				returnvalue = {
+					telex: this.doors[i][1][0],
+					teley: this.doors[i][1][1]-1
+				}
+			}else if(this.doors[i][1][0] === x && this.doors[i][1][1] === y){
+				returnvalue = {
+					telex: this.doors[i][0][0],
+					teley: this.doors[i][0][1]+1
+				}
+			}
+		}
+		if(returnvalue === undefined){
+			return false;
+		}else{
+			return returnvalue;
+		}
 	}
 
 	processMap(){

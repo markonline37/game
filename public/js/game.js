@@ -310,9 +310,16 @@ function action(){
     });
 
     //E
+    let actionToggle = true;
     document.addEventListener('keydown', function(){
+        if(event.code === 'KeyE' && actionToggle){
+            socket.emit('action', "KeyE");
+            actionToggle = false;
+        }
+    });
+    document.addEventListener('keyup', function(){
         if(event.code === 'KeyE'){
-            socket.emit('action', "fish");
+            actionToggle = true;
         }
     });
 

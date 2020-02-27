@@ -1,14 +1,16 @@
 module.exports = class Items{
 	constructor(){
-		this.fish = [
-				{
+		this.items = [
+			{
+				type: "fish",
 				minlevel: "0",
 				maxlevel: "10",
 				name: "Brown Trout",
 				xp: 20,
-				item: 0
+				item: 0,
 			},
 			{
+				type: "fish",
 				minlevel: "5",
 				maxlevel: "15",
 				name: "Salmon",
@@ -16,6 +18,7 @@ module.exports = class Items{
 				item: 1
 			},
 			{
+				type: "fish",
 				minlevel: "10",
 				maxlevel: "20",
 				name: "Carp",
@@ -23,6 +26,7 @@ module.exports = class Items{
 				item: 2
 			},
 			{
+				type: "fish",
 				minlevel: "15",
 				maxlevel: "25",
 				name: "Bass",
@@ -33,7 +37,13 @@ module.exports = class Items{
 	}
 
 	getFish(){
-		return this.fish;
+		let temp = [];
+		for(let i = 0, j = this.items.length; i<j; i++){
+			if(this.items[i].type === "fish"){
+				temp.push(this.items[i]);
+			}
+		}
+		return temp;
 	}
 
 	findItem(name){

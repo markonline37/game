@@ -5,7 +5,8 @@ module.exports = class SocketHandler{
 		this.Player = Player;
 	}
 
-	newPlayer(data, socket, players, activeplayers, startPosX, startPosY, charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance){
+	newPlayer(data, socket, players, activeplayers, startPosX, startPosY, charactersize, movespeed, 
+		horizontaldrawdistance, verticaldrawdistance, mapObj, map, vendor, calc, item){
 		let errors = false;
 		let error = {
 			username: false,
@@ -38,7 +39,7 @@ module.exports = class SocketHandler{
 		
 		if(!errors){
 			let player = new this.Player(data.username, data.email, this.hasher.hash(data.password), socket, startPosX, startPosY, 
-				charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance);
+				charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance, mapObj, map, vendor, calc, item);
 			players.addPlayer(player);
 			activeplayers.addPlayer(player);
 			this.io.to(socket).emit('success');
@@ -103,14 +104,10 @@ module.exports = class SocketHandler{
 		}
 	}
 
-	action(user, data, socket, activeplayers, map, io){
-		switch(data){
-			case "fish":
-				let temp = user.actionFishing(map);
-				if(typeof temp === 'string' || temp instanceof String){
-					io.to(socket).emit('Game Message', temp);
-				}
-				break;
+	action(user, data, socket, activeplayers, io){
+		let temp = user.actions(socket, io);
+		if(typeof temp === 'string' || temp instanceof String){
+			io.to(socket).emit('Game Message', temp);
 		}
 	}
 
@@ -128,8 +125,8 @@ module.exports = class SocketHandler{
 		}
 	}
 
-	clicked(user, data, socket, io, allItems){
-		let temp = user.clicked(data, allItems);
+	clicked(user, data, socket, io){
+		let temp = user.clicked(data);
 		if(typeof temp === 'string' || temp instanceof String){
 			io.to(socket).emit('Game Message', temp);
 		}

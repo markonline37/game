@@ -18,29 +18,34 @@ const startPosX = 50;
 const startPosY = 50;
 const gamespeed = 60;
 
+//modules
 const fs = require('fs');
 const fssync = require('fs').promises;
 const db = require('./module/db');
 const hasher = require('./module/hash');
 const Player = require('./module/player');
-const Fishing = require('./module/fishing');
+const Calculator = require('./module/calculator');
 const AllP = require('./module/allPlayers.js');
 const Items = require('./module/items.js');
-const allItems = new Items();
-const allPlayers = new AllP(fs, fssync, Player, charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance);
 const activeP = require('./module/activePlayers.js');
-const activePlayers = new activeP();
-const fishingObj = new Fishing(allItems.getFish());
 const Mapp = require('./module/map');
 const SocketH = require('./module/socketHandler');
-const socketHandler = new SocketH(io, hasher, Player);
+const Vendors = require('./module/vendors.js');
 
-var map;
-var mapObj;
+//objects
+var map, mapObj, itemsObj, calcObj, socketHandler, vendorsObj, activePlayers, allPlayers;
 
 (async () => {
 	mapObj = await new Mapp(fs, fssync);
 	map = await mapObj.getMap();
+	itemsObj = await new Items();
+	calcObj = await new Calculator(itemsObj.getFish());
+	socketHandler = await new SocketH(io, hasher, Player);
+	vendorsObj = await new Vendors(fs, fssync);
+	activePlayers = await new activeP();
+	allPlayers = await new AllP(fs, fssync, Player, charactersize, movespeed, 
+		horizontaldrawdistance, verticaldrawdistance, mapObj, map, vendorsObj, calcObj, itemsObj);
+	console.log("Server Load Complete");
 })();
 
 
@@ -56,12 +61,11 @@ server.listen(5000, function() {
 
 });
 
-console.log("Server Load Complete");
-
 io.on('connection', function(socket) {
 	
 	socket.on('new player', function(data) {
-		socketHandler.newPlayer(data, socket.id, allPlayers, activePlayers, startPosX, startPosY, charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance);
+		socketHandler.newPlayer(data, socket.id, allPlayers, activePlayers, startPosX, startPosY, charactersize, movespeed, 
+			horizontaldrawdistance, verticaldrawdistance, mapObj, map, vendorsObj, calcObj, itemsObj);
 	});
 
 	socket.on('returning player', function(data){
@@ -89,7 +93,7 @@ io.on('connection', function(socket) {
 	socket.on('action', function(data){
 		let user = activePlayers.findPlayer('socket', socket.id);
 		if(user !== false){
-			socketHandler.action(user, data, socket.id, activePlayers, map, io);
+			socketHandler.action(user, data, socket.id, activePlayers, io);
 		}
 	});
 
@@ -110,7 +114,7 @@ io.on('connection', function(socket) {
 	socket.on('clicked', function(data){
 		let user = activePlayers.findPlayer('socket', socket.id);
 		if(user !== false){
-			socketHandler.clicked(user, data, socket.id, io, allItems);
+			socketHandler.clicked(user, data, socket.id, io);
 		}
 	});
 });
@@ -132,8 +136,8 @@ setInterval(function() {
 				}
 			}
 		}
-		user.calcMovement(map, timeDifference);
-		let packet = user.calcPacket(map, activePlayers);
+		user.calcMovement(timeDifference);
+		let packet = user.calcPacket(activePlayers);
 		/*//if lastPacket is empty
 		if((Object.entries(lastPacket).length === 0 && lastPacket.constructor === Object)){
 			lastPacket[user.email]=packet;
