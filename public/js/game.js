@@ -248,6 +248,9 @@ function action(){
             movement.left = true;
             socket.emit('movement', movement);
             movelefttoggle = false;
+            if(displayShop){
+                displayShop = false;
+            }
         }
     });
     document.addEventListener('keyup', function(){
@@ -265,6 +268,9 @@ function action(){
             movement.up = true;
             socket.emit('movement', movement);
             moveuptoggle = false;
+            if(displayShop){
+                displayShop = false;
+            }
         }
     });
     document.addEventListener('keyup', function(){
@@ -282,6 +288,9 @@ function action(){
             movement.right = true;
             socket.emit('movement', movement);
             moverighttoggle = false;
+            if(displayShop){
+                displayShop = false;
+            }
         }
     });
     document.addEventListener('keyup', function(){
@@ -299,6 +308,9 @@ function action(){
             movement.down = true;
             socket.emit('movement', movement);
             movedowntoggle = false;
+            if(displayShop){
+                displayShop = false;
+            }
         }
     });
     document.addEventListener('keyup', function(){
@@ -306,6 +318,9 @@ function action(){
             movement.down = false;
             socket.emit('movement', movement);
             movedowntoggle = true;
+            if(displayShop){
+                displayShop = false;
+            }
         }
     });
 
@@ -315,11 +330,30 @@ function action(){
         if(event.code === 'KeyE' && actionToggle){
             socket.emit('action', "KeyE");
             actionToggle = false;
+            if(displayShop){
+                displayShop = false;
+            }
         }
     });
     document.addEventListener('keyup', function(){
         if(event.code === 'KeyE'){
             actionToggle = true;
+        }
+    });
+
+    //Esc
+    let escapeToggle = true
+    document.addEventListener('keydown',function(){
+        if(event.code === 'Escape' && escapeToggle){
+            escapeToggle = false;
+            if(displayShop){
+                displayShop = false;
+            }
+        }
+    });
+    document.addEventListener('keyup', function(){
+        if(event.code === 'Escape'){
+            escapeToggle = true;
         }
     });
 
@@ -428,6 +462,13 @@ socket.on('update', function(data){
     drawScreen(data);
 });
 
+let shopItems;
+let displayShop = false;
+socket.on('Display Shop', function(data){
+    shopItems = data;
+    displayShop = true;
+});
+
 let map;
 function drawScreen(data){
     map = data.map;
@@ -449,12 +490,50 @@ function drawScreen(data){
     }
     drawPlayer(data.player, centrehori, centrevert);
     drawMap(data.player.x, data.player.y, Object.keys(map).length-1);
+    if(displayShop){
+        drawShop();
+    }
     drawUI(data.player.skills, data.player.xp, data.player.inventory, data.player.levelTable);
     //draw enemie(s) position/rotation/action
     //draw buildings position
     //if error, draw error.
     if(messageBuffer.length > 0){
         drawGameMessage();
+    }
+}
+
+function drawShop(){
+    let border = 10;
+    ctx.beginPath();
+    ctx.fillStyle = "black";
+    ctx.rect(canvas.width*0.1, canvas.height*0.1, canvas.width*0.8, canvas.height*0.8);
+    ctx.fill();
+    ctx.closePath();
+    ctx.beginPath();
+    ctx.fillStyle = "#DCCA98";
+    ctx.rect(canvas.width*0.1+border, canvas.height*0.1+border, canvas.width*0.8-(border*2), canvas.height*0.8-(border*2));
+    ctx.fill();
+    ctx.closePath();
+    ctx.fillStyle = "black";
+    ctx.font = "30px Calibri";
+    ctx.fillText("Shop Inventory", canvas.width*0.1+border*2, canvas.height*0.15);
+    let inventoryWidth = canvas.width*0.8-border*2;
+    let itemWidth = tilesize+border*2;
+    let numberOfItems = Math.floor(inventoryWidth/itemWidth);
+    let startposx = (inventoryWidth-(itemWidth*numberOfItems))/2;
+    let startposy = canvas.height*0.2;
+    for(let i = 0, j = shopItems.length; i<j; i++){
+        let sx = (shopItems[i]%10)*tilesize;
+        let sy = Math.floor(shopItems[i]/10)*tilesize;
+        if(shopItems[i]%10 !== 0){
+            sx+=1;
+            sy+=1;
+        }
+        //----------------------------------------------------------------------------------
+        let dx = 
+        let dx = (canvas2.width*0.8)+border+((i%5)*tilesize)+((i%5)+1)*horizontalSpace;
+        let dy = canvas2.height/2+(border*6)+(Math.floor(i/5)*tilesize)+Math.floor(i/5)*verticalSpace;
+        ctx2.drawImage(itemImg, sx, sy, tilesize, tilesize, dx, dy, tilesize, tilesize);
     }
 }
 
@@ -620,7 +699,6 @@ function drawUI(skills, xp, inventory, levelTable){
                     let dy = mouseposy-(tilesize/2)+itemoffsety;
                     ctx2.drawImage(itemImg, sx, sy, tilesize, tilesize, dx, dy, tilesize, tilesize);
                 }else{
-                    console.log(items[i]);
                     let sx = (items[i].item%10)*tilesize;
                     let sy = Math.floor(items[i].item/10)*tilesize;
                     if(items[i].item%10 !== 0){

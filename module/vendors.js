@@ -16,19 +16,13 @@ module.exports = class Vendors{
 	}
 
 	findVendor(x, y){
-		console.log("x: "+x);
-		console.log("y: "+y);
 		for(let i = 0, j = this.vendors.length; i<j; i++){
-			console.log("startx: "+this.vendors[i].startx);
-			console.log("endx: "+this.vendors[i].endx);
-			console.log("starty: "+this.vendors[i].starty);
-			console.log("endy: "+this.vendors[i].endy);
-			if(x >= this.vendors[i].startX && x <= this.vendors[i].endx){
-				console.log("this is true");
-				if(y <= this.vendors[i].startY && y <= this.vendors[i].endy){
-					console.log("vendor found");
+			if(this.vendors[i].startx <= x && this.vendors[i].endx >= x){
+				if(this.vendors[i].starty <= y && this.vendors[i].endy >= y){
 					return this.vendors[i];
 				}
+			}else{
+				return "failed";
 			}
 		}
 	}

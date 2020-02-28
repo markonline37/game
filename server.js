@@ -44,7 +44,7 @@ var map, mapObj, itemsObj, calcObj, socketHandler, vendorsObj, activePlayers, al
 	vendorsObj = await new Vendors(fs, fssync);
 	activePlayers = await new activeP();
 	allPlayers = await new AllP(fs, fssync, Player, charactersize, movespeed, 
-		horizontaldrawdistance, verticaldrawdistance, mapObj, map, vendorsObj, calcObj, itemsObj);
+		horizontaldrawdistance, verticaldrawdistance);
 	console.log("Server Load Complete");
 })();
 
@@ -65,7 +65,7 @@ io.on('connection', function(socket) {
 	
 	socket.on('new player', function(data) {
 		socketHandler.newPlayer(data, socket.id, allPlayers, activePlayers, startPosX, startPosY, charactersize, movespeed, 
-			horizontaldrawdistance, verticaldrawdistance, mapObj, map, vendorsObj, calcObj, itemsObj);
+			horizontaldrawdistance, verticaldrawdistance);
 	});
 
 	socket.on('returning player', function(data){
@@ -93,7 +93,7 @@ io.on('connection', function(socket) {
 	socket.on('action', function(data){
 		let user = activePlayers.findPlayer('socket', socket.id);
 		if(user !== false){
-			socketHandler.action(user, data, socket.id, activePlayers, io);
+			socketHandler.action(user, data, socket.id, activePlayers, io, map, vendorsObj);
 		}
 	});
 
@@ -130,14 +130,14 @@ setInterval(function() {
 		let user = players[i];
 		if(user.action !== ""){
 			if(user.action === "fishing"){
-				let temp = user.tickFish(fishingObj, io ,user.socket);
+				let temp = user.tickFish(calcObj, io, user.socket);
 				if(typeof temp === 'string' || temp instanceof String){
 					io.to(user.socket).emit('Game Message', temp);
 				}
 			}
 		}
-		user.calcMovement(timeDifference);
-		let packet = user.calcPacket(activePlayers);
+		user.calcMovement(map, timeDifference, mapObj);
+		let packet = user.calcPacket(activePlayers, map);
 		/*//if lastPacket is empty
 		if((Object.entries(lastPacket).length === 0 && lastPacket.constructor === Object)){
 			lastPacket[user.email]=packet;

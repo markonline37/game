@@ -6,7 +6,7 @@ module.exports = class SocketHandler{
 	}
 
 	newPlayer(data, socket, players, activeplayers, startPosX, startPosY, charactersize, movespeed, 
-		horizontaldrawdistance, verticaldrawdistance, mapObj, map, vendor, calc, item){
+		horizontaldrawdistance, verticaldrawdistance){
 		let errors = false;
 		let error = {
 			username: false,
@@ -39,7 +39,7 @@ module.exports = class SocketHandler{
 		
 		if(!errors){
 			let player = new this.Player(data.username, data.email, this.hasher.hash(data.password), socket, startPosX, startPosY, 
-				charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance, mapObj, map, vendor, calc, item);
+				charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance);
 			players.addPlayer(player);
 			activeplayers.addPlayer(player);
 			this.io.to(socket).emit('success');
@@ -104,8 +104,8 @@ module.exports = class SocketHandler{
 		}
 	}
 
-	action(user, data, socket, activeplayers, io){
-		let temp = user.actions(socket, io);
+	action(user, data, socket, activeplayers, io, map, vendors){
+		let temp = user.actions(socket, io, map, vendors);
 		if(typeof temp === 'string' || temp instanceof String){
 			io.to(socket).emit('Game Message', temp);
 		}
