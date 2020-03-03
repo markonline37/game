@@ -1,6 +1,6 @@
 module.exports = class Player{
 	constructor(username, email, password, socket, x, y, charactersize, movespeed, 
-		horizontaldraw, verticaldraw, gold, facing, xp, skills, inventory){
+		horizontaldraw, verticaldraw, gold, facing, xp, skills, inventory, bankedItems){
 		this.username = username;
 		this.email = email;
 		this.password = password;
@@ -108,6 +108,107 @@ module.exports = class Player{
 			"19": 10873, //2670
 			"20": 13543 //3445
 		};
+		if(bankedItems === undefined){
+			this.bankedItems = [];
+		}else{
+			this.bankedItems = bankedItems;
+		}
+		
+	}
+
+	stop(){
+		this.action = "";
+	}
+
+	bankFreeSpace(){
+		if(this.bankedItems.length >= 60){
+			return false;
+		}else{
+			return true;
+		}
+	}
+
+	bankDeposit(slot){
+		slot+=1;
+		if(this.bankFreeSpace() && slot >= 1 && slot <= 30){
+			if(this.inventory["slot"+slot] !== ""){
+				let item = this.inventory["slot"+slot];
+				let found = false;
+				for(let i = 0, j = this.bankedItems.length; i<j; i++){
+					let temp = this.bankedItems[i];
+					if(temp.item === item.item){
+						this.bankedItems[i].quantity+=1;
+						this.inventory["slot"+slot] = "";
+						found = true;
+					}
+				}
+				if(!found){
+					this.bankedItems.push(item);
+					this.bankedItems[this.bankedItems.length-1].quantity = 1;
+					this.inventory["slot"+slot] = "";
+				}
+				return "Deposited item: "+item.name;
+			}
+		}else{
+			return "No room left in bank";
+		}
+	}
+
+	bankWithdraw(slot){
+		if(!this.emptySpace()){
+			return "Inventory is full";
+		}else{
+			if(slot < this.bankedItems.length){
+				let temp = this.bankedItems[slot];
+				this.addItem(this.bankedItems[slot]);
+				if(this.bankedItems[slot].quantity > 1){
+					this.bankedItems[slot].quantity-=1;
+				}else{
+					this.bankedItems.splice(slot, 1);
+				}
+				return "Widthdrew item: "+temp.name;
+			}
+		}
+	}
+
+	sellItem(slot, vendObj){
+		if(slot >= 1 && slot <= 30){
+			if(this.action === "shopping"){
+				let item = this.inventory["slot"+slot];
+				if(item !== "" && item !== undefined){
+					let temp = this.getTiles();
+					let sold = vendObj.sellItemtoVendor(temp.tilex, temp.tiley, item);
+					if(sold){
+						this.gold+=item.price;
+						this.inventory["slot"+slot] = "";
+						return "Sold Item: "+item.name+" for "+item.price+" credits";
+					}
+				}
+			}
+		}
+	}
+
+	buyItem(itemNumber, vendObj, allItemsObj){
+		if(this.action === "shopping"){
+			if(!this.emptySpace()){
+				return "Inventory is full";
+			}else{
+				if(Number.isInteger(itemNumber)){
+					let temp = this.getTiles();
+					let item = allItemsObj.findItem(itemNumber);
+					if(this.gold >= item.price){
+						let sold = vendObj.buyItemFromVendor(temp.tilex, temp.tiley, itemNumber);
+						if(sold){
+							this.addItem(item);
+							this.gold-=item.price;
+							return "Bought: "+item.name+" for "+item.price+" credits";
+						}
+					}else{
+						return "Not enough credits";
+					}
+				}
+			}
+		}
 	}
 
 	equipMainHand(input){
@@ -142,7 +243,9 @@ module.exports = class Player{
 			let temp = this.inventory["slot"+slot];
 			this.droppedItem(temp);
 			this.inventory["slot"+slot] = "";
-			return 'Dropped item: '+temp.name;
+			if(temp !== undefined){
+				return 'Dropped item: '+temp.name;
+			}
 		}
 	}
 
@@ -166,7 +269,7 @@ module.exports = class Player{
 
 	pickUpItem(item, i){
 		if(!this.emptySpace()){
-			return "Cannot pick up, bag is full";
+			return "Inventory is full";
 		}
 		let distanceX;
 		let distanceY;
@@ -239,32 +342,16 @@ module.exports = class Player{
 		}
 	}
 
-	actions(socket, io, map, vendors){
+	actions(map, vendObj){
 		this.action = "";
-		let tile;
-		let userx = Math.floor(this.x);
-		let usery = Math.floor(this.y);
-		if(this.facing === "N"){
-			tile = map.layers["layer2"][usery-1][userx];
-		}else if(this.facing === "NE"){
-			tile = map.layers["layer2"][usery-1][userx+1];
-		}else if(this.facing === "E"){
-			tile = map.layers["layer2"][usery][userx+1];
-		}else if(this.facing === "SE"){
-			tile = map.layers["layer2"][usery+1][userx+1];
-		}else if(this.facing === "S"){
-			tile = map.layers["layer2"][usery+1][userx];
-		}else if(this.facing === "SW"){
-			tile = map.layers["layer2"][usery-1][userx-1];
-		}else if(this.facing === "W"){
-			tile = map.layers["layer2"][usery][userx-1];
-		}else if(this.facing === "NW"){
-			tile = map.layers["layer2"][usery-1][userx-1];
-		}
+		let temp = this.getTiles(map);
+		let tile = temp.tile;
+		let tilex = temp.tilex;
+		let tiley = temp.tiley;
 		//fishing
 		if(tile >= 300 && tile <= 398){
 			if(!this.emptySpace()){
-				return "Bag is full";
+				return "Inventory is full";
 			}else if(!this.checkFishingEquipment()){
 				return "No fishing equipment in main hand";
 			}else{
@@ -280,23 +367,90 @@ module.exports = class Player{
 		}
 		//shopping
 		else if(tile >= 432 && tile <= 455){
-			this.action = "shopping";
-			let vendor = vendors.findVendor(Math.floor(this.x), Math.floor(this.y));
-			io.to(socket).emit('Display Shop', vendor.items);
+			let temp = vendObj.findVendor(tilex, tiley);
+			if(temp.type === "vendor"){
+				this.action = "shopping";
+				return true;
+			}else if(temp.type === "banker"){
+				this.action = "banking";
+				return true;
+			}
+		}
+	}
+
+	getTiles(map){
+		let tile;
+		let tilex;
+		let tiley;
+		let userx = Math.floor(this.x);
+		let usery = Math.floor(this.y);
+		if(this.facing === "N"){
+			if(map !== undefined){
+				tile = map.layers["layer2"][usery-1][userx];
+			}
+			tilex = Math.floor(this.x);
+			tiley = Math.floor(this.y)-1;
+		}else if(this.facing === "NE"){
+			if(map !== undefined){
+				tile = map.layers["layer2"][usery-1][userx+1];
+			}
+			tilex = Math.floor(this.x)+1;
+			tiley = Math.floor(this.y)-1;
+		}else if(this.facing === "E"){
+			if(map !== undefined){
+				tile = map.layers["layer2"][usery][userx+1];
+			}
+			tilex = Math.floor(this.x)+1;
+			tiley = Math.floor(this.y);
+		}else if(this.facing === "SE"){
+			if(map !== undefined){
+				tile = map.layers["layer2"][usery+1][userx+1];
+			}
+			tilex = Math.floor(this.x)+1;
+			tiley = Math.floor(this.y)+1;
+		}else if(this.facing === "S"){
+			if(map !== undefined){
+				tile = map.layers["layer2"][usery+1][userx];
+			}
+			tilex = Math.floor(this.x);
+			tiley = Math.floor(this.y)+1;
+		}else if(this.facing === "SW"){
+			if(map !== undefined){
+				tile = map.layers["layer2"][usery-1][userx-1];
+			}
+			tilex = Math.floor(this.x)-1;
+			tiley = Math.floor(this.y)+1;
+		}else if(this.facing === "W"){
+			if(map !== undefined){
+				tile = map.layers["layer2"][usery][userx-1];				
+			}
+			tilex = Math.floor(this.x)-1;
+			tiley = Math.floor(this.y);
+		}else if(this.facing === "NW"){
+			if(map !== undefined){
+				tile = map.layers["layer2"][usery-1][userx-1];
+			}
+			tilex = Math.floor(this.x)-1;
+			tiley = Math.floor(this.y)-1;
+		}
+		return {
+			tile,
+			tilex,
+			tiley
 		}
 	}
 
 	tickFish(io, socket, calcObj){
 		if(!this.emptySpace()){
 			this.action = "";
-			return "Bag is full";
+			return "Inventory is full";
 		}else{
 			if(!this.currentlyFishing){
 				this.currentlyFishing = true;
 				let timer = Math.floor(Math.random() * 7000)+2000;
 				setTimeout(function(){
 					if(this.action === "fishing"){
-						let fish = calcObj.calcLoot(this.skills.fishing);
+						let fish = calcObj.calcFishingLoot(this.skills.fishing);
 						this.addItem(fish);
 						this.addXP('fishing', fish.xp, io, socket);
 						this.currentlyFishing = false;
@@ -336,7 +490,7 @@ module.exports = class Player{
 		return returnObj;
 	}
 
-	calcPacket(activeplayers, map){
+	calcPacket(activeplayers, map, vendObj){
 		let list = activeplayers.getPlayers();
 		let active = [];
 		for(let i = 0, j = list.length; i < j; i++){
@@ -374,12 +528,27 @@ module.exports = class Player{
 				}
 			}
 		}
+		let vendor = {};
+		vendor.showVendor = false;
+		if(this.action === "shopping"){
+			vendor.showVendor = true;
+			let temp = this.getTiles(map);
+			let temp2 = vendObj.findVendor(temp.tilex, temp.tiley);
+			vendor.vendorItems = temp2.vendor.items;
+		}
+		let banker = {};
+		banker.showBanker = false;
+		if(this.action === "banking"){
+			banker.showBanker = true;
+			banker.bankerItems = this.bankedItems;
+		}
 		let player = {
 			map: this.calcPlayerMap(map),
 			player:{
 				x: this.x,
 				y: this.y,
 				inventory: this.inventory,
+				gold: this.gold,
 				moving: this.moving,
 				facing: this.facing,
 				action: this.action,
@@ -391,7 +560,9 @@ module.exports = class Player{
 			enemy:{
 
 			},
-			active
+			active,
+			vendor,
+			banker
 		}
 		return player;
 	}

@@ -8,6 +8,7 @@ module.exports = class Items{
 				name: "Brown Trout",
 				xp: 20,
 				item: 0,
+				price: 10
 			},
 			{
 				type: "fish",
@@ -15,7 +16,8 @@ module.exports = class Items{
 				maxlevel: "15",
 				name: "Salmon",
 				xp: 40,
-				item: 1
+				item: 1,
+				price: 15
 			},
 			{
 				type: "fish",
@@ -23,7 +25,8 @@ module.exports = class Items{
 				maxlevel: "20",
 				name: "Carp",
 				xp: 50,
-				item: 2
+				item: 2,
+				price: 20
 			},
 			{
 				type: "fish",
@@ -31,7 +34,8 @@ module.exports = class Items{
 				maxlevel: "25",
 				name: "Bass",
 				xp: 60, 
-				item: 3
+				item: 3,
+				price: 30
 			}
 		];
 	}
@@ -46,22 +50,12 @@ module.exports = class Items{
 		return temp;
 	}
 
-	findItem(name){
-		let found = false;
-		let item;
-		if(!found){
-			for(let i = 0, j = this.fish.length; i<j; i++){
-				if(this.fish[i].name === name){
-					item = this.fish[i];
-					found = true;
-					break;
-				}
+	findItem(item){
+		for(let i = 0, j = this.items.length; i<j; i++){
+			if(this.items[i].item === item){
+				return this.items[i];
 			}
 		}
-		if(found){
-			return item;
-		}else{
-			return null;
-		}
+		return false;
 	}
 }

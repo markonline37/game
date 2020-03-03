@@ -19,7 +19,7 @@ module.exports = class AllPlayers{
 				temp[i].movement.left = false;
 				let player = new Player(temp[i].username, temp[i].email, temp[i].password, temp[i].socket, temp[i].x, temp[i].y,
 					charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance, temp[i].gold, temp[i].facing, temp[i].xp, 
-					temp[i].skills, temp[i].inventory);
+					temp[i].skills, temp[i].inventory, temp[i].bankedItems);
 				this.playerContainer.push(player);
 			}
 		} else {

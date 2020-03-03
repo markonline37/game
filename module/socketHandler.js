@@ -105,7 +105,7 @@ module.exports = class SocketHandler{
 	}
 
 	action(user, data, socket, activeplayers, io, map, vendors){
-		let temp = user.actions(socket, io, map, vendors);
+		let temp = user.actions(map, vendors);
 		if(typeof temp === 'string' || temp instanceof String){
 			io.to(socket).emit('Game Message', temp);
 		}
@@ -127,6 +127,38 @@ module.exports = class SocketHandler{
 
 	clicked(user, data, socket, io){
 		let temp = user.clicked(data);
+		if(typeof temp === 'string' || temp instanceof String){
+			io.to(socket).emit('Game Message', temp);
+		}
+	}
+
+	sellItem(user, data, socket, io, vendObj){
+		let temp = user.sellItem(data, vendObj);
+		if(typeof temp === 'string' || temp instanceof String){
+			io.to(socket).emit('Game Message', temp);
+		}
+	}
+
+	buyItem(user, data, socket, io, vendObj, allItemsObj){
+		let temp = user.buyItem(data, vendObj, allItemsObj);
+		if(typeof temp === 'string' || temp instanceof String){
+			io.to(socket).emit('Game Message', temp);
+		}
+	}
+
+	stop(user){
+		user.stop();
+	}
+
+	bankDeposit(user, data, socket, io){
+		let temp = user.bankDeposit(data);
+		if(typeof temp === 'string' || temp instanceof String){
+			io.to(socket).emit('Game Message', temp);
+		}
+	}
+
+	bankWithdraw(user, data, socket, io){
+		let temp = user.bankWithdraw(data);
 		if(typeof temp === 'string' || temp instanceof String){
 			io.to(socket).emit('Game Message', temp);
 		}

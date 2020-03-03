@@ -32,7 +32,7 @@ function windowResize(){
             container.style.width = sidepanelMinWidth+canvasMinWidth;
             canvas.width = canvasMinWidth;
             canvas2.width = canvasMinWidth+sidepanelMinWidth;
-        }else if(window.innerWidth <= canvaswidth*1.2){
+        }else if(window.innerWidth <= canvaswidth){
             //innerWidth
             container.style.width = window.innerWidth;
             canvas.width = window.innerWidth*0.8;
@@ -60,14 +60,6 @@ function windowResize(){
             canvas.height = canvasheight;
             canvas2.height = canvasheight;
         }
-        /*console.log("window width: "+window.innerWidth);
-        console.log("window height: "+window.innerHeight);
-        console.log("container width: "+container.style.width);
-        console.log("container height: "+container.style.height);
-        console.log("canvas width: "+canvas.width);
-        console.log("canvas height: "+canvas.height);
-        console.log("canvas2 width: "+canvas2.width);
-        console.log("canvas2 height: "+canvas2.height);*/
     }
     
     container.style.margin = "0 auto";
@@ -248,9 +240,6 @@ function action(){
             movement.left = true;
             socket.emit('movement', movement);
             movelefttoggle = false;
-            if(displayShop){
-                displayShop = false;
-            }
         }
     });
     document.addEventListener('keyup', function(){
@@ -268,9 +257,6 @@ function action(){
             movement.up = true;
             socket.emit('movement', movement);
             moveuptoggle = false;
-            if(displayShop){
-                displayShop = false;
-            }
         }
     });
     document.addEventListener('keyup', function(){
@@ -288,9 +274,6 @@ function action(){
             movement.right = true;
             socket.emit('movement', movement);
             moverighttoggle = false;
-            if(displayShop){
-                displayShop = false;
-            }
         }
     });
     document.addEventListener('keyup', function(){
@@ -308,9 +291,6 @@ function action(){
             movement.down = true;
             socket.emit('movement', movement);
             movedowntoggle = false;
-            if(displayShop){
-                displayShop = false;
-            }
         }
     });
     document.addEventListener('keyup', function(){
@@ -318,9 +298,6 @@ function action(){
             movement.down = false;
             socket.emit('movement', movement);
             movedowntoggle = true;
-            if(displayShop){
-                displayShop = false;
-            }
         }
     });
 
@@ -330,9 +307,6 @@ function action(){
         if(event.code === 'KeyE' && actionToggle){
             socket.emit('action', "KeyE");
             actionToggle = false;
-            if(displayShop){
-                displayShop = false;
-            }
         }
     });
     document.addEventListener('keyup', function(){
@@ -346,9 +320,7 @@ function action(){
     document.addEventListener('keydown',function(){
         if(event.code === 'Escape' && escapeToggle){
             escapeToggle = false;
-            if(displayShop){
-                displayShop = false;
-            }
+            socket.emit('stop');
         }
     });
     document.addEventListener('keyup', function(){
@@ -359,35 +331,68 @@ function action(){
 
     
     canvas2.addEventListener('mousedown', function(e){
-        if(e.offsetY <= canvas2.height/2 && e.offsetX >= canvas2.width*0.8){
-            //skill 
-        }else if(e.offsetY >=canvas2.height/2 && e.offsetX >= canvas2.width*0.8){
-            mouseisdown = true;
-            //inventory
-            for(let i = 0, j = inventorySlots.length; i<j; i++){
-                let k = inventorySlots[i];
-                if(k.startx <= e.offsetX && k.endx >= e.offsetX && k.starty <= e.offsetY && k.endy >= e.offsetY){
-                    itemoffsetx = k.startx+(k.endx-k.startx)/2 - e.offsetX;
-                    itemoffsety = k.starty+(k.endy-k.starty)/2 - e.offsetY;
-                    helditem = k.slot;
-                    mouseposx = e.offsetX;
-                    mouseposy = e.offsetY;
+        if(displayShop || displayBanker){
+            if(e.offsetY >=canvas2.height/2 && e.offsetX >= canvas2.width*0.8){
+                //player inventory
+                for(let i = 0, j = inventorySlots.length; i<j; i++){
+                    let k = inventorySlots[i];
+                    if(k.startx <= e.offsetX && k.endx >= e.offsetX && k.starty <= e.offsetY && k.endy >= e.offsetY){
+                        if(displayShop){
+                            socket.emit('sell item', k.slot);
+                        }else if(displayBanker){
+                            socket.emit('bank deposit', i);
+                        }
+                        break;
+                    }
                 }
-            }
-        }else if(e.offsetX <=canvas2.width*0.8){
-            let posx;
-            let posy;
-            if(canvas.width/2 >= e.offsetX){
-                posx = lastPacket.player.x - (canvas.width/2-e.offsetX)/tilesize;
+            }else if((e.offsetY >= canvas.height*0.1 && e.offsetY <= canvas.height*0.9) && (e.offsetX >= canvas.width*0.1 && e.offsetX <= canvas.width*0.9)){
+                //shop inventory
+                for(let i = 0, j = shopSlots.length; i<j; i++){
+                    let temp = shopSlots[i];
+                    if(e.offsetX >= temp.startx && e.offsetX <= temp.endx && e.offsetY >= temp.starty && e.offsetY <= temp.endy){
+                        if(displayShop){
+                            socket.emit('buy item', lastPacket.vendor.vendorItems[temp.slot].item);
+                        }else if(displayBanker){
+                            socket.emit('bank withdraw', i);
+                        }
+                        break;
+                    }
+                }
             }else{
-                posx = lastPacket.player.x + (e.offsetX-canvas.width/2)/tilesize;
+                displayShop = false;
+                displayBanker = false;
             }
-            if(canvas.height/2 >= e.offsetY){
-                posy = lastPacket.player.y - (canvas.height/2-e.offsetY)/tilesize;
-            }else{
-                posy = lastPacket.player.y + (e.offsetY - canvas.height/2)/tilesize;
+        }else{
+            if(e.offsetY <= canvas2.height/2 && e.offsetX >= canvas2.width*0.8){
+                //skill 
+            }else if(e.offsetY >=canvas2.height/2 && e.offsetX >= canvas2.width*0.8){
+                mouseisdown = true;
+                //inventory
+                for(let i = 0, j = inventorySlots.length; i<j; i++){
+                    let k = inventorySlots[i];
+                    if(k.startx <= e.offsetX && k.endx >= e.offsetX && k.starty <= e.offsetY && k.endy >= e.offsetY){
+                        itemoffsetx = k.startx+(k.endx-k.startx)/2 - e.offsetX;
+                        itemoffsety = k.starty+(k.endy-k.starty)/2 - e.offsetY;
+                        helditem = k.slot;
+                        mouseposx = e.offsetX;
+                        mouseposy = e.offsetY;
+                    }
+                }
+            }else if(e.offsetX <=canvas2.width*0.8){
+                let posx;
+                let posy;
+                if(canvas.width/2 >= e.offsetX){
+                    posx = lastPacket.player.x - (canvas.width/2-e.offsetX)/tilesize;
+                }else{
+                    posx = lastPacket.player.x + (e.offsetX-canvas.width/2)/tilesize;
+                }
+                if(canvas.height/2 >= e.offsetY){
+                    posy = lastPacket.player.y - (canvas.height/2-e.offsetY)/tilesize;
+                }else{
+                    posy = lastPacket.player.y + (e.offsetY - canvas.height/2)/tilesize;
+                }
+                socket.emit('clicked', {x: posx, y: posy});
             }
-            socket.emit('clicked', {x: posx, y: posy});
         }
     });
 
@@ -462,13 +467,8 @@ socket.on('update', function(data){
     drawScreen(data);
 });
 
-let shopItems;
 let displayShop = false;
-socket.on('Display Shop', function(data){
-    shopItems = data;
-    displayShop = true;
-});
-
+let displayBanker = false;
 let map;
 function drawScreen(data){
     map = data.map;
@@ -490,19 +490,29 @@ function drawScreen(data){
     }
     drawPlayer(data.player, centrehori, centrevert);
     drawMap(data.player.x, data.player.y, Object.keys(map).length-1);
-    if(displayShop){
-        drawShop();
+    if(data.vendor.showVendor){
+        displayShop = true;
+        drawShop(data.vendor.vendorItems, "Shop");
+    }else{
+        displayShop = false;
     }
-    drawUI(data.player.skills, data.player.xp, data.player.inventory, data.player.levelTable);
+    if(data.banker.showBanker){
+        displayBanker = true;
+        drawShop(data.banker.bankerItems, "Bank");
+    }else{
+        displayBanker = false;
+    }
+    drawUI(data.player.skills, data.player.xp, data.player.inventory, data.player.levelTable, data.player.gold);
     //draw enemie(s) position/rotation/action
-    //draw buildings position
     //if error, draw error.
     if(messageBuffer.length > 0){
         drawGameMessage();
     }
 }
 
-function drawShop(){
+let shopSlots = [];
+function drawShop(shopItems, title){
+    shopSlots = [];
     let border = 10;
     ctx.beginPath();
     ctx.fillStyle = "black";
@@ -516,24 +526,29 @@ function drawShop(){
     ctx.closePath();
     ctx.fillStyle = "black";
     ctx.font = "30px Calibri";
-    ctx.fillText("Shop Inventory", canvas.width*0.1+border*2, canvas.height*0.15);
+    ctx.fillText(title, canvas.width*0.1+border*2, canvas.height*0.15);
     let inventoryWidth = canvas.width*0.8-border*2;
     let itemWidth = tilesize+border*2;
     let numberOfItems = Math.floor(inventoryWidth/itemWidth);
-    let startposx = (inventoryWidth-(itemWidth*numberOfItems))/2;
-    let startposy = canvas.height*0.2;
     for(let i = 0, j = shopItems.length; i<j; i++){
-        let sx = (shopItems[i]%10)*tilesize;
-        let sy = Math.floor(shopItems[i]/10)*tilesize;
+        let sx = (shopItems[i].item%10)*tilesize;
+        let sy = Math.floor(shopItems[i].item/10)*tilesize;
         if(shopItems[i]%10 !== 0){
             sx+=1;
             sy+=1;
         }
-        //----------------------------------------------------------------------------------
-        let dx = 
-        let dx = (canvas2.width*0.8)+border+((i%5)*tilesize)+((i%5)+1)*horizontalSpace;
-        let dy = canvas2.height/2+(border*6)+(Math.floor(i/5)*tilesize)+Math.floor(i/5)*verticalSpace;
-        ctx2.drawImage(itemImg, sx, sy, tilesize, tilesize, dx, dy, tilesize, tilesize);
+        let startposx = canvas.width*0.1+border*2;
+        let startposy = canvas.height*0.2;
+        let dx = startposx+(i%numberOfItems)+(i%numberOfItems)*(tilesize+border);
+        let dy = startposy+Math.floor(i/numberOfItems)+Math.floor(i/numberOfItems)*(tilesize+border);
+        ctx.drawImage(itemImg, sx, sy, tilesize, tilesize, dx, dy, tilesize, tilesize);
+        shopSlots.push({
+            slot: i,
+            startx: dx,
+            starty: dy,
+            endx: dx+32,
+            endy: dy+32
+        });
     }
 }
 
@@ -618,12 +633,78 @@ function inventoryPosition(){
             endy: tempy+tilesize+halfv
         });
     }
-    //console.log(inventorySlots[0].starty);
+}
+
+function formatGold(gold){
+    gold = gold.toString();
+    if(gold.length <= 3){
+        return gold;
+    }else if(gold.length <= 4){
+        return gold.substring(0, 1)+","+gold.substring(1,4);
+    }else if(gold.length <= 5){
+        return gold.substring(0, 2)+","+gold.substring(2, 5);
+    }else if(gold.length <= 6){
+        return gold.substring(0, 3)+"."+gold.substring(3, 4)+"K";
+    }else if(gold.length <= 7){
+        if(gold.substring(1, 2) === "0"){
+            return gold.substring(0, 1)+"M";
+        }else{
+            return gold.substring(0, 1)+"."+gold.substring(1, 2)+"M";
+        }
+    }else if(gold.length <= 8){
+        if(gold.substring(2, 3) === "0"){
+            return gold.substring(0, 2)+"M";
+        }else{
+            return gold.substring(0, 2)+"."+gold.substring(2, 3)+"M";
+        }
+    }else if(gold.length <= 9){
+        if(gold.substring(3, 4)==="0"){
+            return gold.substring(0, 3)+"M";
+        }else{
+            return gold.substring(0, 3)+"."+gold.substring(3,4)+"M";
+        }
+    }else if(gold.length <= 10){
+        if(gold.substring(1, 2) === "0"){
+            return gold.substring(0, 1)+"B";
+        }else{
+            return gold.substring(0, 1)+"."+gold.substring(1, 2)+"B";
+        }
+    }else if(gold.length <= 11){
+        if(gold.substring(2, 3) === "0"){
+            return gold.substring(0, 2)+"B";
+        }else{
+            return gold.substring(0, 2)+"."+gold.substring(2, 3)+"B";
+        }
+    }else if(gold.length <= 12){
+        if(gold.substring(3, 4)==="0"){
+            return gold.substring(0, 3)+"B";
+        }else{
+            return gold.substring(0, 3)+"."+gold.substring(3,4)+"B";
+        }
+    }else if(gold.length <= 13){
+        if(gold.substring(1, 2) === "0"){
+            return gold.substring(0, 1)+"T";
+        }else{
+            return gold.substring(0, 1)+"."+gold.substring(1, 2)+"T";
+        }
+    }else if(gold.length <= 14){
+        if(gold.substring(2, 3) === "0"){
+            return gold.substring(0, 2)+"T";
+        }else{
+            return gold.substring(0, 2)+"."+gold.substring(2, 3)+"T";
+        }
+    }else if(gold.length <= 15){
+        if(gold.substring(3, 4)==="0"){
+            return gold.substring(0, 3)+"T";
+        }else{
+            return gold.substring(0, 3)+"."+gold.substring(3,4)+"T";
+        }
+    }
 }
 
 let storedXp, storedInventory;
 let border = 10;
-function drawUI(skills, xp, inventory, levelTable){
+function drawUI(skills, xp, inventory, levelTable, gold){
     ctx2.clearRect(0,0,canvas2.width*0.8,canvas2.height);
     if(JSON.stringify(storedXp) !== JSON.stringify(xp) || helditem !== null || droppedItem){
         ctx2.clearRect(canvas2.width*0.8,0,canvas2.width,canvas2.height/2);
@@ -679,8 +760,9 @@ function drawUI(skills, xp, inventory, levelTable){
         ctx2.fill();
         ctx2.closePath();
         ctx2.fillStyle = "black";
-        ctx2.font = "30px Calibri";
-        ctx2.fillText("Inventory", canvas2.width*0.8+border*2, canvas.height/2+(border*4));
+        ctx2.font = "24px Calibri";
+        let temp = formatGold(gold);
+        ctx2.fillText("My Inventory - Gold: "+temp, canvas2.width*0.8+border*2, canvas.height/2+(border*4));
         let items = Object.values(inventory);
         let k = 0;
         let horizontalSpace = ((canvas2.width*0.2)-(border*2+2)-(tilesize*5))/6;

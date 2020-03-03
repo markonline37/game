@@ -33,7 +33,7 @@ const SocketH = require('./module/socketHandler');
 const Vendors = require('./module/vendors.js');
 
 //objects
-var map, mapObj, itemsObj, calcObj, socketHandler, vendorsObj, activePlayers, allPlayers;
+var map, mapObj, itemsObj, calcObj, socketHandler, vendObj, activePlayers, allPlayers;
 
 (async () => {
 	mapObj = await new Mapp(fs, fssync);
@@ -41,7 +41,7 @@ var map, mapObj, itemsObj, calcObj, socketHandler, vendorsObj, activePlayers, al
 	itemsObj = await new Items();
 	calcObj = await new Calculator(itemsObj.getFish());
 	socketHandler = await new SocketH(io, hasher, Player);
-	vendorsObj = await new Vendors(fs, fssync);
+	vendObj = await new Vendors(fs, fssync);
 	activePlayers = await new activeP();
 	allPlayers = await new AllP(fs, fssync, Player, charactersize, movespeed, 
 		horizontaldrawdistance, verticaldrawdistance);
@@ -93,7 +93,7 @@ io.on('connection', function(socket) {
 	socket.on('action', function(data){
 		let user = activePlayers.findPlayer('socket', socket.id);
 		if(user !== false){
-			socketHandler.action(user, data, socket.id, activePlayers, io, map, vendorsObj);
+			socketHandler.action(user, data, socket.id, activePlayers, io, map, vendObj);
 		}
 	});
 
@@ -117,6 +117,41 @@ io.on('connection', function(socket) {
 			socketHandler.clicked(user, data, socket.id, io);
 		}
 	});
+
+	socket.on('sell item', function(data){
+		let user = activePlayers.findPlayer('socket', socket.id);
+		if(user !== false){
+			socketHandler.sellItem(user, data, socket.id, io, vendObj);
+		}
+	});
+
+	socket.on('buy item', function(data){
+		let user = activePlayers.findPlayer('socket', socket.id);
+		if(user !== false){
+			socketHandler.buyItem(user, data, socket.id, io, vendObj, itemsObj);
+		}
+	});
+
+	socket.on('stop', function(){
+		let user = activePlayers.findPlayer('socket', socket.id);
+		if(user !== false){
+			socketHandler.stop(user);
+		}
+	});
+
+	socket.on('bank deposit', function(data){
+		let user = activePlayers.findPlayer('socket', socket.id);
+		if(user !== false){
+			socketHandler.bankDeposit(user, data, socket.id, io);
+		}
+	});
+
+	socket.on('bank withdraw', function(data){
+		let user = activePlayers.findPlayer('socket', socket.id);
+		if(user !== false){
+			socketHandler.bankWithdraw(user, data, socket.id, io);
+		}
+	});
 });
 
 //main loop
@@ -130,27 +165,14 @@ setInterval(function() {
 		let user = players[i];
 		if(user.action !== ""){
 			if(user.action === "fishing"){
-				let temp = user.tickFish(calcObj, io, user.socket);
+				let temp = user.tickFish(io, user.socket, calcObj);
 				if(typeof temp === 'string' || temp instanceof String){
 					io.to(user.socket).emit('Game Message', temp);
 				}
 			}
 		}
 		user.calcMovement(map, timeDifference, mapObj);
-		let packet = user.calcPacket(activePlayers, map);
-		/*//if lastPacket is empty
-		if((Object.entries(lastPacket).length === 0 && lastPacket.constructor === Object)){
-			lastPacket[user.email]=packet;
-			io.to(activeplayers[i].socket).emit('update', packet);
-		}else{
-			//event based - only emit to client when a packet is different than last
-			if(JSON.stringify(lastPacket[user.email]) !== JSON.stringify(packet)){
-				io.to(activeplayers[i].socket).emit('update', packet);
-				lastPacket[user.email]=packet;
-			}
-			io.to(activeplayers[i].socket).emit('update', packet);
-			lastPacket[user.email]=packet;
-		}*/
+		let packet = user.calcPacket(activePlayers, map, vendObj);
 		io.to(user.socket).emit('update', packet);
 		lastPacket[user.email]=packet;
 	}
@@ -164,6 +186,7 @@ setInterval(function(){
 
 async function backup(){
 	await allPlayers.backup(activePlayers);
+	await vendObj.backup();
 	return null;
 }
 
@@ -180,6 +203,10 @@ let question = function(q){
 	while(true){
 		let answer = await question('');
 		switch(answer){
+			case "packet":
+				let user4 = allPlayers.getIndividualPlayer('email', 'markonline37@gmail.com');
+				console.log(user4.calcPacket(activePlayers, map, vendObj));
+				break;
 			case "processMap":
 				mapObj.processMap();
 				map = mapObj.getMap();
@@ -265,7 +292,10 @@ let question = function(q){
 					slot30: ""
 				}
 				break;
-
+			case "vendor":
+				let user11 = activePlayers.findPlayer('email', 'markonline37@gmail.com');
+				console.log(vendObj.findVendor(226, 29));
+				break;
 			case "equipRiverRod":
 				activePlayers.findPlayer('email', 'markonline37@gmail.com').equipMainHand("riverRod");
 				break;

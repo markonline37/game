@@ -8,7 +8,8 @@ module.exports = class Map{
 		this.fssync = fssync;
 		this.map = this.loadMap();
 		this.doors = [
-			[[55, 50], [229, 32]]
+			[[55, 50], [229, 32]],
+			[[69, 48], [264, 33]]
 		]
 	}
 

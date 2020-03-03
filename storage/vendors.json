@@ -1,12 +1,49 @@
-[	
-	{
-		"vendorID": 0,
-		"startx": 225,
-		"endx": 231,
-		"starty": 27,
-		"endy": 31,
-		"items": [
-			
-		]
-	}
+[
+    {
+        "vendorID": 0,
+        "vendorposition": [
+            [
+                226,
+                27
+            ],
+            [
+                226,
+                28
+            ],
+            [
+                226,
+                29
+            ],
+            [
+                226,
+                30
+            ],
+            [
+                226,
+                31
+            ]
+        ],
+        "items": [
+            {
+                "type": "fish",
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0,
+                "price": 10,
+                "quantity": 21
+            },
+            {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30,
+                "quantity": 34
+            }
+        ]
+    }
 ]
