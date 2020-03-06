@@ -39,7 +39,7 @@ var map, mapObj, itemsObj, calcObj, socketHandler, vendObj, activePlayers, allPl
 	mapObj = await new Mapp(fs, fssync);
 	map = await mapObj.getMap();
 	itemsObj = await new Items();
-	calcObj = await new Calculator(itemsObj.getFish());
+	calcObj = await new Calculator(itemsObj.getFish(), itemsObj.getJunk());
 	socketHandler = await new SocketH(io, hasher, Player);
 	vendObj = await new Vendors(fs, fssync);
 	activePlayers = await new activeP();

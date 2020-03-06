@@ -36,8 +36,36 @@ module.exports = class Items{
 				xp: 60, 
 				item: 3,
 				price: 30
+			},
+			{
+				type: "junk",
+				name: "Rusted can",
+				item: 4,
+				price: 2
+			},
+			{
+				type: "junk",
+				name: "Branch",
+				item: 5,
+				price: 1
+			},
+			{
+				type: "junk",
+				name: "Old Boot",
+				item: 6,
+				price: 2
 			}
 		];
+	}
+
+	getJunk(){
+		let temp = [];
+		for(let i = 0, j = this.items.length; i<j; i++){
+			if(this.items[i].type === "junk"){
+				temp.push(this.items[i]);
+			}
+		}
+		return temp;
 	}
 
 	getFish(){

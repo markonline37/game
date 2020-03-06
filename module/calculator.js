@@ -1,10 +1,13 @@
 module.exports = class Calculator{
-	constructor(fish){
+	constructor(fish, junk){
 		this.fish = fish;
+		this.junk = junk;
 	}
 
 	calcFishingLoot(skill){
 		let temparr = [];
+		let randomInt = Math.round(Math.random()*this.junk.length);
+		temparr.push(this.junk[randomInt]);
 		for(let i = 0, j = this.fish.length; i < j; i++){
 			if(skill >= this.fish[i].minlevel && skill <= this.fish[i].maxlevel){
 				let weight;

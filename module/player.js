@@ -452,9 +452,11 @@ module.exports = class Player{
 					if(this.action === "fishing"){
 						let fish = calcObj.calcFishingLoot(this.skills.fishing);
 						this.addItem(fish);
-						this.addXP('fishing', fish.xp, io, socket);
+						if(fish.type === "fish"){
+							this.addXP('fishing', fish.xp, io, socket);
+						}
 						this.currentlyFishing = false;
-						return String("Caught a "+fish.name);
+						io.to(socket).emit('Game Message', "Caught: "+fish.name);
 					}else{
 						this.currentlyFishing = false;
 					}

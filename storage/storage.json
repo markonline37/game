@@ -3,10 +3,10 @@
         "username": "mark",
         "email": "markonline37@gmail.com",
         "password": "322c0434f4893e2763a1b54556e0a4ea527a270413c10242dfc1d2ddc24e9ede",
-        "socket": "My76hx7Zw9xtuabqAAAB",
-        "gold": 3280,
-        "x": 262.39499999999987,
-        "y": 30.434999999999995,
+        "socket": "gpXzWXUEcyZpwv1iAAAB",
+        "gold": 4975,
+        "x": 54.10000000000024,
+        "y": 45.655000000000065,
         "moving": false,
         "horizontaldraw": 46,
         "verticaldraw": 40,
@@ -14,7 +14,7 @@
         "movespeed": 0.01,
         "currentlyFishing": false,
         "fishingEnvironment": "",
-        "facing": "N",
+        "facing": "S",
         "movement": {
             "up": false,
             "down": false,
@@ -22,95 +22,23 @@
             "right": false
         },
         "xp": {
-            "fishing": 12380,
+            "fishing": 17200,
             "woodcutting": 0
         },
         "skills": {
-            "fishing": 19,
+            "fishing": 20,
             "woodcutting": 0
         },
-        "action": "banking",
+        "action": "",
         "inventory": {
-            "slot1": {
-                "type": "fish",
-                "minlevel": "10",
-                "maxlevel": "20",
-                "name": "Carp",
-                "xp": 50,
-                "item": 2,
-                "price": 20,
-                "quantity": 1
-            },
-            "slot2": {
-                "type": "fish",
-                "minlevel": "10",
-                "maxlevel": "20",
-                "name": "Carp",
-                "xp": 50,
-                "item": 2,
-                "price": 20,
-                "quantity": 1
-            },
-            "slot3": {
-                "type": "fish",
-                "minlevel": "10",
-                "maxlevel": "20",
-                "name": "Carp",
-                "xp": 50,
-                "item": 2,
-                "price": 20,
-                "quantity": 1
-            },
-            "slot4": {
-                "type": "fish",
-                "minlevel": "10",
-                "maxlevel": "20",
-                "name": "Carp",
-                "xp": 50,
-                "item": 2,
-                "price": 20,
-                "quantity": 1
-            },
-            "slot5": {
-                "type": "fish",
-                "minlevel": "10",
-                "maxlevel": "20",
-                "name": "Carp",
-                "xp": 50,
-                "item": 2,
-                "price": 20,
-                "quantity": 1
-            },
-            "slot6": {
-                "type": "fish",
-                "minlevel": "10",
-                "maxlevel": "20",
-                "name": "Carp",
-                "xp": 50,
-                "item": 2,
-                "price": 20,
-                "quantity": 1
-            },
-            "slot7": {
-                "type": "fish",
-                "minlevel": "10",
-                "maxlevel": "20",
-                "name": "Carp",
-                "xp": 50,
-                "item": 2,
-                "price": 20,
-                "quantity": 1
-            },
-            "slot8": {
-                "type": "fish",
-                "minlevel": "10",
-                "maxlevel": "20",
-                "name": "Carp",
-                "xp": 50,
-                "item": 2,
-                "price": 20,
-                "quantity": 1
-            },
+            "slot1": "",
+            "slot2": "",
+            "slot3": "",
+            "slot4": "",
+            "slot5": "",
+            "slot6": "",
+            "slot7": "",
+            "slot8": "",
             "slot9": "",
             "slot10": "",
             "slot11": "",
@@ -159,17 +87,6 @@
             "19": 10873,
             "20": 13543
         },
-        "bankedItems": [
-            {
-                "type": "fish",
-                "minlevel": "15",
-                "maxlevel": "25",
-                "name": "Bass",
-                "xp": 60,
-                "item": 3,
-                "price": 30,
-                "quantity": 14
-            }
-        ]
+        "bankedItems": []
     }
 ]
