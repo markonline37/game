@@ -104,15 +104,15 @@ module.exports = class SocketHandler{
 		}
 	}
 
-	action(user, data, socket, activeplayers, io, map, vendors){
-		let temp = user.actions(map, vendors);
+	action(user, data, socket, activeplayers, io, map, vendors, treeObj){
+		let temp = user.actions(map, vendors, treeObj);
 		if(typeof temp === 'string' || temp instanceof String){
 			io.to(socket).emit('Game Message', temp);
 		}
 	}
 
-	dropItem(user, data, socket, io){
-		let temp = user.dropItem(data);
+	dropItem(user, data, socket, io, droppedItemsObj){
+		let temp = user.dropItem(data, droppedItemsObj);
 		if(typeof temp === 'string' || temp instanceof String){
 			io.to(socket).emit('Game Message', temp);
 		}
@@ -125,8 +125,8 @@ module.exports = class SocketHandler{
 		}
 	}
 
-	clicked(user, data, socket, io){
-		let temp = user.clicked(data);
+	clicked(user, data, socket, io, droppedItemsObj){
+		let temp = user.clicked(data, droppedItemsObj);
 		if(typeof temp === 'string' || temp instanceof String){
 			io.to(socket).emit('Game Message', temp);
 		}

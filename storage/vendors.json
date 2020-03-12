@@ -32,7 +32,7 @@
                 "xp": 20,
                 "item": 0,
                 "price": 10,
-                "quantity": 21
+                "quantity": 190
             },
             {
                 "type": "fish",
@@ -42,28 +42,7 @@
                 "xp": 60,
                 "item": 3,
                 "price": 30,
-                "quantity": 82
-            },
-            {
-                "type": "junk",
-                "name": "Branch",
-                "item": 5,
-                "price": 1,
-                "quantity": 3
-            },
-            {
-                "type": "junk",
-                "name": "Old Boot",
-                "item": 6,
-                "price": 2,
-                "quantity": 4
-            },
-            {
-                "type": "junk",
-                "name": "Rusted can",
-                "item": 4,
-                "price": 2,
-                "quantity": 2
+                "quantity": 334
             },
             {
                 "type": "fish",
@@ -73,7 +52,47 @@
                 "xp": 50,
                 "item": 2,
                 "price": 20,
-                "quantity": 12
+                "quantity": 102
+            },
+            {
+                "type": "log",
+                "name": "Basic Log",
+                "minlevel": 0,
+                "item": 7,
+                "xp": 30,
+                "price": 5,
+                "quantity": 28
+            },
+            {
+                "type": "junk",
+                "name": "Branch",
+                "item": 5,
+                "price": 1,
+                "quantity": 113
+            },
+            {
+                "type": "junk",
+                "name": "Old Boot",
+                "item": 6,
+                "price": 2,
+                "quantity": 120
+            },
+            {
+                "type": "junk",
+                "name": "Rusted can",
+                "item": 4,
+                "price": 2,
+                "quantity": 114
+            },
+            {
+                "type": "fish",
+                "minlevel": "5",
+                "maxlevel": "15",
+                "name": "Salmon",
+                "xp": 40,
+                "item": 1,
+                "price": 15,
+                "quantity": 76
             }
         ]
     }

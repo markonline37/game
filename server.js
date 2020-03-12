@@ -1,4 +1,9 @@
-// Dependencies
+var redis = require('redis');
+var client = redis.createClient();
+client.on('connect', function(){
+	console.log('connected');
+});
+
 var express = require('express');
 var http = require('http');
 var path = require('path');
@@ -31,9 +36,11 @@ const activeP = require('./module/activePlayers.js');
 const Mapp = require('./module/map');
 const SocketH = require('./module/socketHandler');
 const Vendors = require('./module/vendors.js');
+const Trees = require('./module/trees');
+const DroppedItem = require('./module/droppedItems.js')
 
 //objects
-var map, mapObj, itemsObj, calcObj, socketHandler, vendObj, activePlayers, allPlayers;
+var map, mapObj, itemsObj, calcObj, socketHandler, vendObj, activePlayers, allPlayers, treesObj, droppedItemsObj;
 
 (async () => {
 	mapObj = await new Mapp(fs, fssync);
@@ -45,6 +52,8 @@ var map, mapObj, itemsObj, calcObj, socketHandler, vendObj, activePlayers, allPl
 	activePlayers = await new activeP();
 	allPlayers = await new AllP(fs, fssync, Player, charactersize, movespeed, 
 		horizontaldrawdistance, verticaldrawdistance);
+	treesObj = await new Trees(map);
+	droppedItemsObj = await new DroppedItem(horizontaldrawdistance/2, verticaldrawdistance/2);
 	console.log("Server Load Complete");
 })();
 
@@ -93,14 +102,14 @@ io.on('connection', function(socket) {
 	socket.on('action', function(data){
 		let user = activePlayers.findPlayer('socket', socket.id);
 		if(user !== false){
-			socketHandler.action(user, data, socket.id, activePlayers, io, map, vendObj);
+			socketHandler.action(user, data, socket.id, activePlayers, io, map, vendObj, treesObj);
 		}
 	});
 
 	socket.on('drop item', function(data){
 		let user = activePlayers.findPlayer('socket', socket.id);
 		if(user !== false){
-			socketHandler.dropItem(user, data, socket.id, io);
+			socketHandler.dropItem(user, data, socket.id, io, droppedItemsObj);
 		}
 	});
 
@@ -114,7 +123,7 @@ io.on('connection', function(socket) {
 	socket.on('clicked', function(data){
 		let user = activePlayers.findPlayer('socket', socket.id);
 		if(user !== false){
-			socketHandler.clicked(user, data, socket.id, io);
+			socketHandler.clicked(user, data, socket.id, io, droppedItemsObj);
 		}
 	});
 
@@ -158,23 +167,17 @@ io.on('connection', function(socket) {
 let lastPacket = {};
 let lastUpdateTime = (new Date()).getTime();
 setInterval(function() {
+	treesObj.controller(map);
+	droppedItemsObj.controller();
 	let currentTime = (new Date()).getTime();
 	let timeDifference = currentTime - lastUpdateTime;
 	let players = activePlayers.getPlayers();
 	for(let i=0, j=players.length; i<j; i++){
-		let user = players[i];
-		if(user.action !== ""){
-			if(user.action === "fishing"){
-				let temp = user.tickFish(io, user.socket, calcObj);
-				if(typeof temp === 'string' || temp instanceof String){
-					io.to(user.socket).emit('Game Message', temp);
-				}
-			}
+		let packet = players[i].tick(io, players[i].socket, treesObj, calcObj, map, itemsObj, timeDifference, mapObj, activePlayers, vendObj, droppedItemsObj);
+		io.to(players[i].socket).emit('update', packet);
+		if(lastPacket.length > 0){
+			lastPacket[players[i].email]=packet;
 		}
-		user.calcMovement(map, timeDifference, mapObj);
-		let packet = user.calcPacket(activePlayers, map, vendObj);
-		io.to(user.socket).emit('update', packet);
-		lastPacket[user.email]=packet;
 	}
 	lastUpdateTime = currentTime;
 }, 1000 / gamespeed);
@@ -203,9 +206,16 @@ let question = function(q){
 	while(true){
 		let answer = await question('');
 		switch(answer){
+			case "dropped":
+			let user5 = allPlayers.getIndividualPlayer('email', 'markonline37@gmail.com');
+				console.log(droppedItemsObj.getItems(user5.x, user5.y, user5.email));
+				break;
+			case "trees":
+				console.log(treesObj.getTrees());
+				break;
 			case "packet":
 				let user4 = allPlayers.getIndividualPlayer('email', 'markonline37@gmail.com');
-				console.log(user4.calcPacket(activePlayers, map, vendObj));
+				console.log(user4.calcPacket(activePlayers, map, vendObj, droppedItemsObj));
 				break;
 			case "processMap":
 				mapObj.processMap();

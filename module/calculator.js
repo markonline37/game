@@ -6,8 +6,8 @@ module.exports = class Calculator{
 
 	calcFishingLoot(skill){
 		let temparr = [];
-		let randomInt = Math.round(Math.random()*this.junk.length);
-		temparr.push(this.junk[randomInt]);
+		let toggle = true;
+		let randomInt = Math.floor(Math.random() * Math.floor(this.junk.length));
 		for(let i = 0, j = this.fish.length; i < j; i++){
 			if(skill >= this.fish[i].minlevel && skill <= this.fish[i].maxlevel){
 				let weight;
@@ -21,8 +21,25 @@ module.exports = class Calculator{
 				for(let k = 0; k < weight; k++){
 					temparr.push(this.fish[i]);
 				}
+
 			}
 		}
-		return temparr[(Math.floor(Math.random() * Math.floor(temparr.length)))];
+		if(skill <= 10){
+			for(let i = 0, j = Math.floor(temparr.length)/3; i<j; i++){
+				temparr.push(this.junk[randomInt]);
+			}
+		}else if(skill <= 25){
+			for(let i = 0, j = Math.floor(temparr.length/4); i<j; i++){
+				temparr.push(this.junk[randomInt]);
+			}
+		}else if(skill <= 50){
+			for(let i = 0, j = Math.floor(temparr.length/5); i<j; i++){
+				temparr.push(this.junk[randomInt]);
+			}
+		}else if(skill <= 70){
+			temparr.push(this.junk[randomInt]);
+		}
+		let int = (Math.floor(Math.random() * Math.floor(temparr.length)));
+		return temparr[int];
 	}
 }

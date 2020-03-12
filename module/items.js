@@ -54,6 +54,14 @@ module.exports = class Items{
 				name: "Old Boot",
 				item: 6,
 				price: 2
+			},
+			{
+				type: "log",
+				name: "Basic Log",
+				minlevel: 0,
+				item: 7,
+				xp: 30,
+				price: 5
 			}
 		];
 	}

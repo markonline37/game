@@ -84,7 +84,6 @@ module.exports = class Player{
 			this.inventory = inventory
 		}
 		this.equippedMainHand = "riverRod";
-		this.droppedItemList = [];
 		this.maxlevel = 20;
 		this.levelTable = {
 			"1": 100, //110
@@ -215,16 +214,15 @@ module.exports = class Player{
 		this.equippedMainHand = input;
 	}
 
-	clicked(data){
-		let itemPosition = null;
-		for(let i = 0, j = this.droppedItemList.length; i<j; i++){
-			let t = this.droppedItemList[i];
-			if(data.x >= t.x-0.5 && data.x <= t.x+0.5 && data.y >= t.y-0.5 && data.y <= t.y+0.5){
-				itemPosition = i;
+	//pickup dropped item
+	clicked(data, droppedItemObj){
+		if(!this.emptySpace()){
+			return "Inventory is full";
+		}else{
+			let item = droppedItemObj.pickupItem(data, this.x, this.y, this.email);
+			if(item !== false && item !== undefined && item !== null){
+				this.addItem(item);
 			}
-		}
-		if(itemPosition !== null){
-			return this.pickUpItem(this.droppedItemList[itemPosition], itemPosition);
 		}
 	}
 
@@ -238,58 +236,14 @@ module.exports = class Player{
 		}
 	}
 
-	dropItem(slot){
+	dropItem(slot, droppedItemObj){
 		if(this.inventory["slot"+slot] !== "" && slot !== null){
 			let temp = this.inventory["slot"+slot];
-			this.droppedItem(temp);
+			droppedItemObj.dropItem(this.x, this.y, temp, this.email);
 			this.inventory["slot"+slot] = "";
 			if(temp !== undefined){
 				return 'Dropped item: '+temp.name;
 			}
-		}
-	}
-
-	droppedItem(input){
-		let item = {
-			type: input,
-			x: this.x,
-			y: this.y
-		}
-		this.droppedItemList.push(item);
-		setTimeout(function(){
-			let foundItem = null;
-			for(let i = 0, j = this.droppedItemList.length; i<j; i++){
-				if(this.droppedItemList[i].id === item.id){
-					this.droppedItemList.splice(i, 1);
-					break;
-				}
-			}
-		}.bind(this), 60000);
-	}
-
-	pickUpItem(item, i){
-		if(!this.emptySpace()){
-			return "Inventory is full";
-		}
-		let distanceX;
-		let distanceY;
-		let pickUpDistance = 5;
-		if(this.x > item.x){
-			distanceX = this.x - item.x;
-		}else{
-			distanceX = item.x - this.x;
-		}
-		if(this.y > item.y){
-			distanceY = this.y - item.y;
-		}else{
-			distanceY = item.y - this.y;
-		}
-		if((distanceY >= 0 && distanceY <= pickUpDistance)&&(distanceX >=0 && distanceX <= pickUpDistance)){
-			this.addItem(item.type);
-			this.droppedItemList.splice(i, 1);
-			return "Picked up item: "+item.type.name;
-		}else{
-			return "Not within range of item";
 		}
 	}
 
@@ -342,7 +296,7 @@ module.exports = class Player{
 		}
 	}
 
-	actions(map, vendObj){
+	actions(map, vendObj, treeObj){
 		this.action = "";
 		let temp = this.getTiles(map);
 		let tile = temp.tile;
@@ -375,6 +329,10 @@ module.exports = class Player{
 				this.action = "banking";
 				return true;
 			}
+		}
+
+		else if((tile >= 16 && tile <= 21) || (tile >= 24 && tile <= 29)){
+			this.action = "woodcutting";
 		}
 	}
 
@@ -440,29 +398,53 @@ module.exports = class Player{
 		}
 	}
 
-	tickFish(io, socket, calcObj){
-		if(!this.emptySpace()){
-			this.action = "";
-			return "Inventory is full";
-		}else{
-			if(!this.currentlyFishing){
-				this.currentlyFishing = true;
-				let timer = Math.floor(Math.random() * 7000)+2000;
-				setTimeout(function(){
-					if(this.action === "fishing"){
-						let fish = calcObj.calcFishingLoot(this.skills.fishing);
-						this.addItem(fish);
-						if(fish.type === "fish"){
-							this.addXP('fishing', fish.xp, io, socket);
-						}
-						this.currentlyFishing = false;
-						io.to(socket).emit('Game Message', "Caught: "+fish.name);
-					}else{
-						this.currentlyFishing = false;
-					}
-				}.bind(this), timer);
+	tick(io, socket, treeObj, calcObj, map, itemObj, timeDifference, mapObj, activeplayers, vendObj, droppedItemObj){
+		if(this.action === "woodcutting"){
+			if(!this.emptySpace()){
+				this.action = "";
+				io.to(socket).emit('Game Message', "Inventory is full");
+			}else{
+				let temp = this.getTiles(map);
+				//update iron when equipment is added, update [] with % reduction gear
+				let loot = treeObj.chopTree(this.email, temp.tilex, temp.tiley, "iron", map, []);
+				if(typeof loot === 'string' || loot instanceof String){
+					this.action = "";
+					io.to(socket).emit('Game Message', loot);
+				}else if(loot !== undefined){
+					this.action = "";
+					let item = itemObj.findItem(loot);
+					this.addItem(item);
+					this.addXP('woodcutting', item.xp, io, socket);
+					io.to(socket).emit('Game Message', "You felled a tree and received a : "+item.name);
+				}
 			}
+		}else if(this.action === "fishing"){
+			if(!this.emptySpace()){
+				this.action = "";
+				io.to(socket).emit('Game Message', "Inventory is full");
+			}else{
+				if(!this.currentlyFishing){
+					this.currentlyFishing = true;
+					let timer = Math.floor(Math.random() * 7000)+2000;
+					setTimeout(function(){
+						if(this.action === "fishing"){
+							let fish = calcObj.calcFishingLoot(this.skills.fishing);
+							this.addItem(fish);
+							if(fish.type === "fish"){
+								this.addXP('fishing', fish.xp, io, socket);
+							}
+							this.currentlyFishing = false;
+							io.to(socket).emit('Game Message', "Caught: "+fish.name);
+						}else{
+							this.currentlyFishing = false;
+						}
+					}.bind(this), timer);
+				}
+			}
+		}else if(this.moving === true){
+			this.calcMovement(map, timeDifference, mapObj);
 		}
+		return this.calcPacket(activeplayers, map, vendObj, droppedItemObj);
 	}
 
 	calcPlayerMap(map){
@@ -492,7 +474,7 @@ module.exports = class Player{
 		return returnObj;
 	}
 
-	calcPacket(activeplayers, map, vendObj){
+	calcPacket(activeplayers, map, vendObj, droppedItemObj){
 		let list = activeplayers.getPlayers();
 		let active = [];
 		for(let i = 0, j = list.length; i < j; i++){
@@ -558,7 +540,7 @@ module.exports = class Player{
 				xp: this.xp,
 				levelTable: this.levelTable
 			},
-			items: this.droppedItemList,
+			items: droppedItemObj.getItems(this.x, this.y, this.email),
 			enemy:{
 
 			},
