@@ -85,28 +85,6 @@ module.exports = class Player{
 		}
 		this.equippedMainHand = "riverRod";
 		this.maxlevel = 20;
-		this.levelTable = {
-			"1": 100, //110
-			"2": 210, //122
-			"3": 332, //136
-			"4": 468, //154
-			"5": 622, //176
-			"6": 798, //202
-			"7": 1033, //235
-			"8": 1268, //274
-			"9": 1542, //324
-			"10": 1866, //386
-			"11": 2252, //463
-			"12": 2715, //560
-			"13": 3275, //683
-			"14": 3958, //841
-			"15": 4799, //1043
-			"16": 5842, //1303
-			"17": 7145, //1642
-			"18": 8787, //2086
-			"19": 10873, //2670
-			"20": 13543 //3445
-		};
 		if(bankedItems === undefined){
 			this.bankedItems = [];
 		}else{
@@ -247,7 +225,7 @@ module.exports = class Player{
 		}
 	}
 
-	addXP(skill, xp, io, socket){
+	addXP(skill, xp, io, socket, levelTable){
 		//apply xp
 		this.xp[skill]+=xp;
 		//check for level up
@@ -398,7 +376,52 @@ module.exports = class Player{
 		}
 	}
 
-	tick(io, socket, treeObj, calcObj, map, itemObj, timeDifference, mapObj, activeplayers, vendObj, droppedItemObj){
+	snapShot(){
+		return {
+			x: this.x,
+			y: this.y,
+			gold: this.gold,
+			facing: this.facing,
+			xp: this.xp,
+			skills: this.skills,
+			inventory: this.inventory,
+			bankedItems: this.bankedItems
+		}
+	}
+
+	//-------------------------------------------------------------------------------
+	//might need to JSON.stringify objects for comparison
+	//need to update all the other server socket.on methods
+
+	rerunSnapShot(snapshot){
+		if(this.x !== snapshot.x){
+			console.log("rewriting x");
+		}
+		if(this.y !== snapshot.y){
+			console.log("rewriting y");
+		}
+		if(this.gold !== snapshot.gold){
+			console.log("rewriting gold");
+		}
+		if(this.facing !== snapshot.facing){
+			console.log("rewriting facing");
+		}
+		if(this.xp !== snapshot.xp){
+			console.log("rewriting xp");
+		}
+		if(this.skills !== snapshot.skills){
+			console.log("rewriting skills");
+		}
+		if(this.inventory !== snapshot.inventory){
+			console.log("rewriting inventory");
+		}
+		if(this.bankedItems !== snapshot.bankedItems){
+			console.log("rewriting bankedItems");
+		}
+	}
+
+	tick(io, socket, treeObj, calcObj, map, itemObj, timeDifference, mapObj, activeplayers, vendObj, droppedItemObj, levelTable, client){
+		let snapshot = this.snapShot();
 		if(this.action === "woodcutting"){
 			if(!this.emptySpace()){
 				this.action = "";
@@ -414,7 +437,7 @@ module.exports = class Player{
 					this.action = "";
 					let item = itemObj.findItem(loot);
 					this.addItem(item);
-					this.addXP('woodcutting', item.xp, io, socket);
+					this.addXP('woodcutting', item.xp, io, socket, levelTable);
 					io.to(socket).emit('Game Message', "You felled a tree and received a : "+item.name);
 				}
 			}
@@ -431,7 +454,7 @@ module.exports = class Player{
 							let fish = calcObj.calcFishingLoot(this.skills.fishing);
 							this.addItem(fish);
 							if(fish.type === "fish"){
-								this.addXP('fishing', fish.xp, io, socket);
+								this.addXP('fishing', fish.xp, io, socket, levelTable);
 							}
 							this.currentlyFishing = false;
 							io.to(socket).emit('Game Message', "Caught: "+fish.name);
@@ -444,6 +467,7 @@ module.exports = class Player{
 		}else if(this.moving === true){
 			this.calcMovement(map, timeDifference, mapObj);
 		}
+		this.rerunSnapShot(snapshot);
 		return this.calcPacket(activeplayers, map, vendObj, droppedItemObj);
 	}
 

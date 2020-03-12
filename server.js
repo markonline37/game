@@ -1,7 +1,11 @@
+//var redis = require('async-redis');
 var redis = require('redis');
 var client = redis.createClient();
 client.on('connect', function(){
-	console.log('connected');
+	console.log('redis connection: connected');
+});
+client.on("error", function(error) {
+  console.error(error);
 });
 
 var express = require('express');
@@ -40,7 +44,7 @@ const Trees = require('./module/trees');
 const DroppedItem = require('./module/droppedItems.js')
 
 //objects
-var map, mapObj, itemsObj, calcObj, socketHandler, vendObj, activePlayers, allPlayers, treesObj, droppedItemsObj;
+var map, mapObj, itemsObj, calcObj, socketHandler, vendObj, activePlayers, allPlayers, treesObj, droppedItemsObj, levelTable;
 
 (async () => {
 	mapObj = await new Mapp(fs, fssync);
@@ -54,6 +58,12 @@ var map, mapObj, itemsObj, calcObj, socketHandler, vendObj, activePlayers, allPl
 		horizontaldrawdistance, verticaldrawdistance);
 	treesObj = await new Trees(map);
 	droppedItemsObj = await new DroppedItem(horizontaldrawdistance/2, verticaldrawdistance/2);
+	try{
+		let temp = fs.readFileSync('./storage/levelTable.json');
+		levelTable = JSON.parse(temp);
+	}catch(err){
+		console.log("error loading levelTable: "+err);
+	}
 	console.log("Server Load Complete");
 })();
 
@@ -70,32 +80,165 @@ server.listen(5000, function() {
 
 });
 
+var onlinePlayers = [];
+
 io.on('connection', function(socket) {
-	
+	//new player-------------------------------------------------------------------------
 	socket.on('new player', function(data) {
-		socketHandler.newPlayer(data, socket.id, allPlayers, activePlayers, startPosX, startPosY, charactersize, movespeed, 
-			horizontaldrawdistance, verticaldrawdistance);
+		client.exists(data.email.toLowerCase(), function(err, reply){
+			let errors = false;
+			let error = {
+				username: false,
+				email: false,
+				password: false
+			};
+			let exists;
+			reply === 1 ? exists = true : exists = false;
+			if(data.username.length < 3 || data.username.length > 32){
+				error.username = "Username must be between 3 and 32 characters";
+				errors = true;
+			}
+			if(exists){
+				error.email = "Email already exists";
+				errors = true;
+			}else if(!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.email)){
+				error.email = "Email is not in a valid format";
+				errors = true;
+			}
+			if(data.password.length < 8){
+				error.password = "Password must be be at least 8 characters";
+	    		errors = true;
+			}
+			
+			if(!errors){
+				client.hmset(data.email.toLowerCase(), {
+					'username': data.username,
+					'email': data.email.toLowerCase(),
+					'password': hasher.hash(data.password),
+					'socket': socket.id,
+					'x': startPosX,
+					'y': startPosY,
+					'gold': 0,
+					'facing': 'S',
+					'xp': '{fishing:0,woodcutting:0}',
+					'skills': '{fishing:0,woodcutting:0}',
+					'action': '',
+					'inventory': JSON.stringify({
+							slot1: "",
+							slot2: "",
+							slot3: "",
+							slot4: "",
+							slot5: "",
+							slot6: "",
+							slot7: "",
+							slot8: "",
+							slot9: "",
+							slot10: "",
+							slot11: "",
+							slot12: "",
+							slot13: "",
+							slot14: "",
+							slot15: "",
+							slot16: "",
+							slot17: "",
+							slot18: "",
+							slot19: "",
+							slot20: "",
+							slot21: "",
+							slot22: "",
+							slot23: "",
+							slot24: "",
+							slot25: "",
+							slot26: "",
+							slot27: "",
+							slot28: "",
+							slot29: "",
+							slot30: ""
+						}),
+					'bankedItems': ''
+				});
+				client.sadd('allOnlinePlayers', data.email.toLowerCase());
+				let player = new Player(data.username, data.email, hasher.hash(data.password), socket, startPosX, startPosY, 
+					charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance);
+				onlinePlayers.push({'socket': socket.id, 'user': player});
+				io.to(socket.id).emit('success');
+				console.log('Player Joined: '+data.email.toLowerCase());
+			} else {
+				io.to(socket.id).emit('failed new user', error);
+			}
+		});
 	});
 
+	//returning player -----------------------------------------------------------------------
 	socket.on('returning player', function(data){
-		socketHandler.returningPlayer(data, allPlayers, activePlayers, socket.id);
+		let errors = false;
+		let error = {
+			email: false,
+			password: false
+		};
+		if(!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.email)){
+			error.email = "Email is not in a valid format";
+			errors = true;
+		}
+		if(data.password.length < 8){
+			error.password = "Invalid password";
+			errors = true;
+		}
+		
+		client.exists(data.email.toLowerCase(), function(err, reply){
+			if(reply !== 1){
+				error.email = "Email address not found";
+				errors = true;
+			}
+			client.hget(data.email.toLowerCase(), 'password', function(err, reply){
+				if(hasher.hash(data.password) !== reply){
+					error.password = "Password doesn't match";
+					errors = true;
+				}
+				client.smembers("allOnlinePlayers", function(err, result){
+					if(result.includes(data.email.toLowerCase())){
+						error.email = "Account already in use";
+						errors = true;
+					}
+					if(!errors){
+						client.hgetall(data.email.toLowerCase(), function(err, hash){
+							client.sadd('allOnlinePlayers', data.email.toLowerCase());
+							let player = new Player(hash.username, hash.email, hash.password, hash.socket, hash.x, hash.y,
+								charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance, hash.gold, hash.facing, hash.xp, 
+								hash.skills, hash.inventory, hash.bankedItems);
+							onlinePlayers.push({'socket': socket.id, 'user': player});
+							console.log('Player Joined: '+data.email.toLowerCase());
+							io.to(socket.id).emit('success');
+						});
+					}else{
+						io.to(socket.id).emit('failed login', error);
+					}
+				});
+			});
+		});	
 	});
 
 	socket.on('disconnect', function(){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			if(lastPacket.hasOwnProperty(user.email)){
-				delete lastPacket[user];
+		for(let i = 0, j = onlinePlayers.length; i<j; i++){
+			if(onlinePlayers[i].socket === socket.id){
+				console.log('Player Disconnected: '+onlinePlayers[i].email);
+				client.srem('allOnlinePlayers', onlinePlayers[i].email);
+				onlinePlayers.splice(i, 1);
+				break;
 			}
-			socketHandler.disconnect(socket.id, activePlayers, allPlayers);
-		}
-			
+		}		
 	});
 
 	socket.on('movement', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.movement(user, data, socket.id, activePlayers);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			player.movement = data;
+			if(data.left === true || data.right === true || data.up === true || data.down === true){
+				player.moving = true;
+				player.action = "";
+			}else{
+				player.moving = false;
+			}
 		}
 	});
 
@@ -164,20 +307,16 @@ io.on('connection', function(socket) {
 });
 
 //main loop
-let lastPacket = {};
 let lastUpdateTime = (new Date()).getTime();
 setInterval(function() {
 	treesObj.controller(map);
 	droppedItemsObj.controller();
 	let currentTime = (new Date()).getTime();
 	let timeDifference = currentTime - lastUpdateTime;
-	let players = activePlayers.getPlayers();
-	for(let i=0, j=players.length; i<j; i++){
-		let packet = players[i].tick(io, players[i].socket, treesObj, calcObj, map, itemsObj, timeDifference, mapObj, activePlayers, vendObj, droppedItemsObj);
-		io.to(players[i].socket).emit('update', packet);
-		if(lastPacket.length > 0){
-			lastPacket[players[i].email]=packet;
-		}
+	for(let i=0, j=onlinePlayers.length; i<j; i++){
+		let packet = onlinePlayers[i].user.tick(io, onlinePlayers[i].socket, treesObj, calcObj, map, 
+			itemsObj, timeDifference, mapObj, activePlayers, vendObj, droppedItemsObj, levelTable, client);
+		io.to(onlinePlayers[i].socket).emit('update', packet);
 	}
 	lastUpdateTime = currentTime;
 }, 1000 / gamespeed);
@@ -191,6 +330,15 @@ async function backup(){
 	await allPlayers.backup(activePlayers);
 	await vendObj.backup();
 	return null;
+}
+
+function findPlayer(socket){
+	for(let i = 0, j = onlinePlayers.length; i<j; i++){
+		if(onlinePlayers[i].socket === socket){
+			return onlinePlayers[i].user;
+		}
+	}
+	return false;
 }
 
 const readline = require('readline');
