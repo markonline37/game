@@ -1,30 +1,62 @@
 /*
-	server is not scalable in current state;
-		client.del('allOnlinePlayers') is a cheap workaround for crashes, wont work when scalable
-		anything that requires data from the database such as vendor items and players requires a read from database first
-		right now the database is used to backup data, with data being set on initial load from database.
-		additionally treesObj and droppedItemsObj controller is controlled by this server
-			will run into similar issues when enemies are added
+	todo:
+		Functionality to move to master when cluster is implemented;
+			client.del('allOnlinePlayers')
+			tree.controller - setup pub/sub
+			droppedItems.controller - setup pub/sub
+			master maintains a copy of allonlineplayers - function to get all players on worker start
+		
+		Finish map
 
-	todo: 
-		get vendor working by reading the database first
-		same with trees
-		same with droppedItems
-		same with player packet - other players
+		Add woodcutting animation
+
 */
+//redis general connection ---------------------------------------------
 var redis = require('redis');
 var client = redis.createClient();
 client.on('connect', function(){
 	client.del('allOnlinePlayers');
 	console.log('redis connection: connected');
 });
+client.on("error", function(error) {
+  console.error(error);
+});
+
+//redis pub/sub ---------------------------------------------------------
+const ioredis = require('ioredis');
+const clientVendorSub = new ioredis();
+const clientPlayerSub = new ioredis();
+const clientPub = new ioredis();
+//vendor sub --------------------------------------------------------
+const vendorChannel = 'vendorChannel';
+clientVendorSub.subscribe(vendorChannel, (error, result) => {
+	if(error !== null){
+		console.log("Error subscribing to "+vendorChannel+": "+error);
+	}
+});
+clientVendorSub.on('message', (vendorChannel, message) => {
+	vendObj.updateVendors(message);
+});
+//player sub -----------------------------------------------------------
+const playerChannel = 'playerChannel';
+clientPlayerSub.subscribe(playerChannel, (error, result) => {
+	if(error !== null){
+		console.log("Error subscribing to "+playerChannel+": "+error);
+	}
+});
+clientPlayerSub.on('message', (playerChannel, message) => {
+	let data = JSON.parse(message);
+	if(data.type === "disconnect"){
+		delete allOnlinePlayers[data.unique];
+	}else if(data.type === "update"){
+		allOnlinePlayers[data.unique] = data.data;
+	}
+});
+
 
 const {promisify} = require('util');
 const hgetallAsync = promisify(client.hgetall).bind(client);
 
-client.on("error", function(error) {
-  console.error(error);
-});
 
 var express = require('express');
 var http = require('http');
@@ -66,7 +98,8 @@ var map, mapObj, itemsObj, calcObj, vendObj, treesObj, droppedItemsObj, levelTab
 	map = await mapObj.getMap();
 	itemsObj = await new Items();
 	calcObj = await new Calculator(itemsObj.getFish(), itemsObj.getJunk());
-	vendObj = await new Vendors(fs, client);
+	let vendorhash = await hgetallAsync('vendor');
+	vendObj = await new Vendors(fs, vendorhash);
 	treesObj = await new Trees(map);
 	droppedItemsObj = await new DroppedItem(horizontaldrawdistance/2, verticaldrawdistance/2);
 	try{
@@ -92,6 +125,7 @@ server.listen(5000, function() {
 });
 
 var onlinePlayers = {};
+var allOnlinePlayers = {};
 
 io.on('connection', function(socket) {
 	//new player-------------------------------------------------------------------------
@@ -175,6 +209,18 @@ io.on('connection', function(socket) {
 					'bankedItems': JSON.stringify([])
 				});
 				client.sadd('allOnlinePlayers', data.email.toLowerCase());
+				clientPub.publish(playerChannel, JSON.stringify({
+					type: "update",
+					unique: data.email.toLowerCase(),
+					data: {
+						username: data.username,
+						x: startPosX,
+						y: startPosY,
+						facing: "S",
+						moving: false,
+						action: ""
+					}
+				}));
 				let player = new Player(data.username, data.email, hasher.hash(data.password), socket, startPosX, startPosY, 
 					charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance);
 				onlinePlayers[socket.id] = player;
@@ -220,11 +266,25 @@ io.on('connection', function(socket) {
 					if(!errors){
 						client.hgetall(data.email.toLowerCase(), function(err, hash){
 							client.sadd('allOnlinePlayers', data.email.toLowerCase());
-							let player = new Player(hash.username, hash.email, hash.password, hash.socket, parseFloat(hash.x), 
-								parseFloat(hash.y), charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance, 
+							let x = parseFloat(hash.x);
+							let y = parseFloat(hash.y);
+							let player = new Player(hash.username, hash.email, hash.password, hash.socket, x, 
+								y, charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance, 
 								parseInt(hash.gold), hash.facing, JSON.parse(hash.xp), JSON.parse(hash.skills), 
 								JSON.parse(hash.inventory), JSON.parse(hash.bankedItems));
 							onlinePlayers[socket.id] = player;
+							clientPub.publish(playerChannel, JSON.stringify({
+								type: "update",
+								unique: data.email.toLowerCase(),
+								data: {
+									username: hash.username,
+									x: x,
+									y: y,
+									facing: hash.facing,
+									moving: false,
+									action: ""
+								}
+							}));
 							console.log('Player Joined: '+data.email.toLowerCase());
 							io.to(socket.id).emit('success');
 						});
@@ -239,6 +299,10 @@ io.on('connection', function(socket) {
 	socket.on('disconnect', function(){
 		let player = findPlayer(socket.id);
 		if(player !== false){
+			clientPub.publish(playerChannel, JSON.stringify({
+				type: "disconnect",
+				unique: player.email,
+			}));
 			console.log('Player Disconnected: '+onlinePlayers[socket.id].email);
 			client.srem('allOnlinePlayers', onlinePlayers[socket.id].email);
 			delete onlinePlayers[socket.id];
@@ -301,7 +365,7 @@ io.on('connection', function(socket) {
 	socket.on('sell item', function(data){
 		let player = findPlayer(socket.id);
 		if(player !== false){
-			let temp = player.sellItem(data, vendObj, client);
+			let temp = player.sellItem(data, vendObj, client, clientPub, vendorChannel);
 			if(typeof temp === 'string' || temp instanceof String){
 				io.to(socket.id).emit('Game Message', temp);
 			}
@@ -311,7 +375,7 @@ io.on('connection', function(socket) {
 	socket.on('buy item', function(data){
 		let player = findPlayer(socket.id);
 		if(player !== false){
-			let temp = player.buyItem(data, vendObj, itemsObj, client);
+			let temp = player.buyItem(data, vendObj, itemsObj, client, clientPub, vendorChannel);
 			if(typeof temp === 'string' || temp instanceof String){
 				io.to(socket.id).emit('Game Message', temp);
 			}
@@ -356,7 +420,7 @@ setInterval(function() {
 	let timeDifference = currentTime - lastUpdateTime;
 	for(let i in onlinePlayers){
 		let packet = onlinePlayers[i].tick(io, i, treesObj, calcObj, map, itemsObj, timeDifference, 
-			mapObj, onlinePlayers, vendObj, droppedItemsObj, levelTable, client);
+			mapObj, allOnlinePlayers, vendObj, droppedItemsObj, levelTable, client, clientPub, playerChannel);
 		io.to(i).emit('update', packet);
 	}
 	lastUpdateTime = currentTime;

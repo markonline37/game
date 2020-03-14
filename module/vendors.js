@@ -1,10 +1,13 @@
 module.exports = class Vendors{
-	constructor(fs, client){
+	constructor(fs, data){
 		this.vendorfile = './storage/vendors.json';
 		this.bankerfile = './storage/bankers.json';
 		this.fs = fs;
 		this.vendors = this.loadVendors();
 		this.bankers = this.loadBankers();
+		for(let i in data){
+			this.vendors[i].items = JSON.parse(data[i]);
+		}
 	}
 
 	loadVendors(){
@@ -48,27 +51,28 @@ module.exports = class Vendors{
 		return false;
 	}
 	
-	sellItemtoVendor(x, y, item, client){
+	sellItemtoVendor(x, y, item, client, clientPub, vendorChannel, itemsObj){
 		let temp = this.findVendor(x, y, client);
 		let vendorID = null;
-		let sold = false;
 		if(temp.type === "vendor" && temp !== false){
-			let foundVendor = temp.vendor;
-			vendorID = foundVendor.vendorID;
-			for(let i = 0, j = foundVendor.items.length; i<j; i++){
-				if(foundVendor.items[i].item === item.item){
-					foundVendor.items[i].quantity++;
-					sold = true;
+			let vendorID = temp.vendor.vendorID;
+			let found = false;
+			for(let i = 0, j = this.vendors[vendorID].items.length; i<j; i++){
+				if(item.item === this.vendors[vendorID].items[i].item){
+					this.vendors[vendorID].items[i].quantity++;
+					found = true;
 					break;
 				}
 			}
-			if(!sold){
-				foundVendor.items.push(item);
-				foundVendor.items[foundVendor.items.length-1].quantity = 1;
-				sold = true;
+			if(!found){
+				let temp = item;
+				temp.quantity = 1;
+				this.vendors[vendorID].items.push(temp);
 			}
-		}
-		if(sold){
+			clientPub.publish(vendorChannel, JSON.stringify({
+				items: this.vendors[vendorID].items,
+				vendor: vendorID
+			}));
 			client.hset('vendor', vendorID, JSON.stringify(this.vendors[vendorID].items));
 			return true;
 		}else{
@@ -76,7 +80,12 @@ module.exports = class Vendors{
 		}
 	}
 
-	buyItemFromVendor(x, y, item, client){
+	updateVendors(data){
+		let input = JSON.parse(data);
+		this.vendors[input.vendor].items = input.items;
+	}
+
+	buyItemFromVendor(x, y, item, client, clientPub, vendorChannel){
 		let temp = this.findVendor(x, y, client);
 		let bought = false;
 		let vendorID = null;
@@ -85,20 +94,20 @@ module.exports = class Vendors{
 			vendorID = foundVendor.vendorID;
 			for(let i = 0, j = foundVendor.items.length; i<j; i++){
 				if(foundVendor.items[i].item === item){
-					if(foundVendor.items[i].quantity === 1){
-						foundVendor.items.splice(i, 1);
+					if(this.vendors[vendorID].items[i].quantity === 1){
+						this.vendors[vendorID].items.splice(i, 1);
 					}else{
-						foundVendor.items[i].quantity--;
+						this.vendors[vendorID].items[i].quantity--;
 					}
-					bought = true;
+					clientPub.publish(vendorChannel, JSON.stringify({
+						items: this.vendors[vendorID].items,
+						vendor: vendorID
+					}));
+					client.hset('vendor', vendorID, JSON.stringify(this.vendors[vendorID].items));
+					return true;
 				}
 			}
 		}
-		if(bought){
-			client.hset('vendor', vendorID, JSON.stringify(this.vendors[vendorID].items));
-			return true;
-		}else{
-			return false;
-		}
+		return false;
 	}
 }

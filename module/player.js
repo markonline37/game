@@ -148,13 +148,13 @@ module.exports = class Player{
 		}
 	}
 
-	sellItem(slot, vendObj, client){
+	sellItem(slot, vendObj, client, clientPub, vendorChannel){
 		if(slot >= 1 && slot <= 30){
 			if(this.action === "shopping"){
 				let item = this.inventory["slot"+slot];
 				if(item !== "" && item !== undefined){
 					let temp = this.getTiles();
-					let sold = vendObj.sellItemtoVendor(temp.tilex, temp.tiley, item, client);
+					let sold = vendObj.sellItemtoVendor(temp.tilex, temp.tiley, item, client, clientPub, vendorChannel);
 					if(sold){
 						this.gold+=item.price;
 						this.inventory["slot"+slot] = "";
@@ -165,7 +165,7 @@ module.exports = class Player{
 		}
 	}
 
-	buyItem(itemNumber, vendObj, allItemsObj, client){
+	buyItem(itemNumber, vendObj, allItemsObj, client, clientPub, vendorChannel){
 		if(this.action === "shopping"){
 			if(!this.emptySpace()){
 				return "Inventory is full";
@@ -174,7 +174,7 @@ module.exports = class Player{
 					let temp = this.getTiles();
 					let item = allItemsObj.findItem(itemNumber);
 					if(this.gold >= item.price){
-						let sold = vendObj.buyItemFromVendor(temp.tilex, temp.tiley, itemNumber, client);
+						let sold = vendObj.buyItemFromVendor(temp.tilex, temp.tiley, itemNumber, client, clientPub, vendorChannel);
 						if(sold){
 							this.addItem(item);
 							this.gold-=item.price;
@@ -385,22 +385,31 @@ module.exports = class Player{
 			xp: JSON.stringify(this.xp),
 			skills: JSON.stringify(this.skills),
 			inventory: JSON.stringify(this.inventory),
-			bankedItems: JSON.stringify(this.bankedItems)
+			bankedItems: JSON.stringify(this.bankedItems),
+			action: this.action,
+			moving: this.moving
 		}
 	}
 
-	rerunSnapShot(client){
+	rerunSnapShot(client, clientPub, playerChannel){
 		let temp = [];
 		let different = false;
+		let xcheck = false;
+		let ycheck = false;
+		let facingcheck = false;
+		let actioncheck = false;
+		let movingcheck = false;
 		if(this.x !== this.snapshot.x){
 			temp.push('x');
 			temp.push(this.x);
 			different = true;
+			xcheck = true;
 		}
 		if(this.y !== this.snapshot.y){
 			temp.push('y')
 			temp.push(this.y);
 			different = true;
+			ycheck = true;
 		}
 		if(this.gold !== this.snapshot.gold){
 			temp.push('gold');
@@ -411,6 +420,13 @@ module.exports = class Player{
 			temp.push('facing');
 			temp.push(this.facing);
 			different = true;
+			facingcheck = true;
+		}
+		if(this.moving !== this.snapshot.moving){
+			movingcheck = true;
+		}
+		if(this.action !== this.snapshot.action){
+			actioncheck = true;
 		}
 		if(JSON.stringify(this.xp) !== this.snapshot.xp){
 			temp.push('xp');
@@ -432,13 +448,30 @@ module.exports = class Player{
 			temp.push(JSON.stringify(this.bankedItems));
 			different = true;
 		}
+		if(xcheck || ycheck || facingcheck || actioncheck || movingcheck){
+			clientPub.publish(playerChannel, JSON.stringify({
+				type: "update",
+				unique: this.email,
+				data: {
+					username: this.username,
+					x: this.x,
+					y: this.y,
+					facing: this.facing,
+					moving: false,
+					action: ""
+				}
+			}));
+		}
 		if(different){
 			client.hset(this.email, temp);
+			this.snapshot = this.snapShot();
+		}else if(movingcheck){
 			this.snapshot = this.snapShot();
 		}
 	}
 
-	tick(io, socket, treeObj, calcObj, map, itemObj, timeDifference, mapObj, onlinePlayers, vendObj, droppedItemObj, levelTable, client){
+	tick(io, socket, treeObj, calcObj, map, itemObj, timeDifference, mapObj, 
+		allOnlinePlayers, vendObj, droppedItemObj, levelTable, client, clientPub, playerChannel){
 		if(this.action === "woodcutting"){
 			if(!this.emptySpace()){
 				this.action = "";
@@ -484,8 +517,8 @@ module.exports = class Player{
 		}else if(this.moving === true){
 			this.calcMovement(map, timeDifference, mapObj);
 		}
-		this.rerunSnapShot(client);
-		return this.calcPacket(onlinePlayers, map, vendObj, droppedItemObj, levelTable, client);
+		this.rerunSnapShot(client, clientPub, playerChannel);
+		return this.calcPacket(allOnlinePlayers, map, vendObj, droppedItemObj, levelTable, client);
 	}
 
 	calcPlayerMap(map){
@@ -515,38 +548,38 @@ module.exports = class Player{
 		return returnObj;
 	}
 
-	calcPacket(onlinePlayers, map, vendObj, droppedItemObj, levelTable, client){
+	calcPacket(allOnlinePlayers, map, vendObj, droppedItemObj, levelTable, client){
 		let active = [];
-		for(let i = 0, j = onlinePlayers.length; i < j; i++){
-			if(onlinePlayers[i].email !== this.email){
+		for(let i in allOnlinePlayers){
+			if(i !== this.email){
 				let isInHoriRange = false;
 				let isInVertRange = false;
-				if(this.x > onlinePlayers[i].x){
-					if(this.x-onlinePlayers[i].x <= this.horizontaldraw/2){
+				if(this.x > allOnlinePlayers[i].x){
+					if(this.x-allOnlinePlayers[i].x <= this.horizontaldraw/2){
 						isInHoriRange = true;
 					}
 				}else{
-					if(onlinePlayers[i].x-this.x <= this.horizontaldraw/2){
+					if(allOnlinePlayers[i].x-this.x <= this.horizontaldraw/2){
 						isInHoriRange = true;
 					}
 				}
-				if(this.y > onlinePlayers[i].y){
-					if(this.y-onlinePlayers[i].y <= this.verticaldraw/2){
+				if(this.y > allOnlinePlayers[i].y){
+					if(this.y-allOnlinePlayers[i].y <= this.verticaldraw/2){
 						isInVertRange = true;
 					}
 				}else{
-					if(onlinePlayers[i].y-this.y <= this.verticaldraw/2){
+					if(allOnlinePlayers[i].y-this.y <= this.verticaldraw/2){
 						isInVertRange = true;
 					}
 				}
 				if(isInVertRange && isInHoriRange){
 					let temp = {
-						username: onlinePlayers[i].username,
-						x: onlinePlayers[i].x,
-						y: onlinePlayers[i].y,
-						facing: onlinePlayers[i].facing,
-						moving: onlinePlayers[i].moving,
-						action: onlinePlayers[i].action
+						username: allOnlinePlayers[i].username,
+						x: allOnlinePlayers[i].x,
+						y: allOnlinePlayers[i].y,
+						facing: allOnlinePlayers[i].facing,
+						moving: allOnlinePlayers[i].moving,
+						action: allOnlinePlayers[i].action
 					}
 					active.push(temp);
 				}
@@ -647,6 +680,8 @@ module.exports = class Player{
 			}else if(map.layers["layer2"][posy][posx] === 0){
 				this.y-=(this.movespeed*timeDifference);
 				this.moving = true;
+			}else{
+				this.moving = false;
 			}
 		}else if(movement === "NE"){
 			this.facing = "NE";
@@ -665,6 +700,8 @@ module.exports = class Player{
 			}else if(map.layers["layer2"][northEastY][Math.floor(this.x)] === 0){
 				this.y-=((this.movespeed/2)*timeDifference);
 				this.moving = true;
+			}else{
+				this.moving = false;
 			}
 		}else if(movement === "E"){
 			this.facing = "E";
@@ -676,7 +713,7 @@ module.exports = class Player{
 				this.x+=(this.movespeed*timeDifference);
 				this.moving = true;
 			}else{
-				console.log(east);
+				this.moving = false;
 			}
 		}else if(movement === "SE"){
 			this.facing = "SE";
@@ -693,6 +730,8 @@ module.exports = class Player{
 			}else if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
 				this.y+=((this.movespeed/2)*timeDifference);
 				this.moving = true;
+			}else{
+				this.moving = false;
 			}
 		}else if(movement === "S"){
 			this.facing = "S";
@@ -702,6 +741,8 @@ module.exports = class Player{
 			}else if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed*timeDifference))][Math.floor(this.x)] === 0){
 				this.y+=(this.movespeed*timeDifference);
 				this.moving = true;
+			}else{
+				this.moving = false;
 			}
 		}else if(movement === "SW"){
 			this.facing = "SW";
@@ -718,6 +759,8 @@ module.exports = class Player{
 			}else if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
 				this.y+=((this.movespeed/2)*timeDifference);
 				this.moving = true;
+			}else{
+				this.moving = false;
 			}
 		}else if(movement === "W"){
 			this.facing = "W";
@@ -727,6 +770,8 @@ module.exports = class Player{
 			}else if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x-(this.charactersize/100)-(this.movespeed*timeDifference))] === 0){
 				this.x-=(this.movespeed*timeDifference);
 				this.moving = true;
+			}else{
+				this.moving = false;
 			}
 		}else if(movement === "NW"){
 			this.facing = "NW";
@@ -743,6 +788,8 @@ module.exports = class Player{
 			}else if(map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
 				this.y-=((this.movespeed/2)*timeDifference);
 				this.moving = true;
+			}else{
+				this.moving = false;
 			}
 		}
 	}
