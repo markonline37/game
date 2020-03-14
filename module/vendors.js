@@ -1,17 +1,15 @@
 module.exports = class Vendors{
-	constructor(fs, fssync){
+	constructor(fs, client){
 		this.vendorfile = './storage/vendors.json';
 		this.bankerfile = './storage/bankers.json';
 		this.fs = fs;
-		this.fssync = fssync;
 		this.vendors = this.loadVendors();
 		this.bankers = this.loadBankers();
 	}
 
 	loadVendors(){
 		try{
-			let temp = this.fs.readFileSync(this.vendorfile);
-			return JSON.parse(temp);
+			return JSON.parse(this.fs.readFileSync(this.vendorfile));
 		}catch(err){
 			console.log(err);
 		}
@@ -19,14 +17,13 @@ module.exports = class Vendors{
 
 	loadBankers(){
 		try{
-			let temp = this.fs.readFileSync(this.bankerfile);
-			return JSON.parse(temp);
+			return JSON.parse(this.fs.readFileSync(this.bankerfile));
 		}catch(err){
 			console.log(err);
 		}
 	}
 
-	findVendor(tilex, tiley){
+	findVendor(tilex, tiley, client){
 		for(let i = 0, j = this.vendors.length; i<j; i++){
 			for(let k = 0, l = this.vendors[i].vendorposition.length; k<l; k++){
 				let temp = this.vendors[i].vendorposition[k];
@@ -51,27 +48,41 @@ module.exports = class Vendors{
 		return false;
 	}
 	
-	sellItemtoVendor(x, y, item){
-		let temp = this.findVendor(x, y);
+	sellItemtoVendor(x, y, item, client){
+		let temp = this.findVendor(x, y, client);
+		let vendorID = null;
+		let sold = false;
 		if(temp.type === "vendor" && temp !== false){
 			let foundVendor = temp.vendor;
+			vendorID = foundVendor.vendorID;
 			for(let i = 0, j = foundVendor.items.length; i<j; i++){
 				if(foundVendor.items[i].item === item.item){
 					foundVendor.items[i].quantity++;
-					return true;
+					sold = true;
+					break;
 				}
 			}
-			foundVendor.items.push(item);
-			foundVendor.items[foundVendor.items.length-1].quantity = 1;
-			return true;
+			if(!sold){
+				foundVendor.items.push(item);
+				foundVendor.items[foundVendor.items.length-1].quantity = 1;
+				sold = true;
+			}
 		}
-		return false;
+		if(sold){
+			client.hset('vendor', vendorID, JSON.stringify(this.vendors[vendorID].items));
+			return true;
+		}else{
+			return false;
+		}
 	}
 
-	buyItemFromVendor(x, y, item){
-		let temp = this.findVendor(x, y);
+	buyItemFromVendor(x, y, item, client){
+		let temp = this.findVendor(x, y, client);
+		let bought = false;
+		let vendorID = null;
 		if(temp.type === "vendor" && temp !== false){
 			let foundVendor = temp.vendor;
+			vendorID = foundVendor.vendorID;
 			for(let i = 0, j = foundVendor.items.length; i<j; i++){
 				if(foundVendor.items[i].item === item){
 					if(foundVendor.items[i].quantity === 1){
@@ -79,22 +90,15 @@ module.exports = class Vendors{
 					}else{
 						foundVendor.items[i].quantity--;
 					}
-					return true;
+					bought = true;
 				}
 			}
 		}
-		return false;
-	}
-
-	async backup(){
-		try{
-			let data = JSON.stringify(this.vendors, null, 4);
-			await this.fssync.writeFile(this.vendorfile, data);
-			data = JSON.stringify(this.bankers, null, 4);
-			await this.fssync.writeFile(this.bankerfile, data);
-		}catch(err){
-			console.log(err);
+		if(bought){
+			client.hset('vendor', vendorID, JSON.stringify(this.vendors[vendorID].items));
+			return true;
+		}else{
+			return false;
 		}
-		return null;
 	}
 }

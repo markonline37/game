@@ -90,7 +90,7 @@ module.exports = class Player{
 		}else{
 			this.bankedItems = bankedItems;
 		}
-		
+		this.snapshot = this.snapShot();
 	}
 
 	stop(){
@@ -148,13 +148,13 @@ module.exports = class Player{
 		}
 	}
 
-	sellItem(slot, vendObj){
+	sellItem(slot, vendObj, client){
 		if(slot >= 1 && slot <= 30){
 			if(this.action === "shopping"){
 				let item = this.inventory["slot"+slot];
 				if(item !== "" && item !== undefined){
 					let temp = this.getTiles();
-					let sold = vendObj.sellItemtoVendor(temp.tilex, temp.tiley, item);
+					let sold = vendObj.sellItemtoVendor(temp.tilex, temp.tiley, item, client);
 					if(sold){
 						this.gold+=item.price;
 						this.inventory["slot"+slot] = "";
@@ -165,7 +165,7 @@ module.exports = class Player{
 		}
 	}
 
-	buyItem(itemNumber, vendObj, allItemsObj){
+	buyItem(itemNumber, vendObj, allItemsObj, client){
 		if(this.action === "shopping"){
 			if(!this.emptySpace()){
 				return "Inventory is full";
@@ -174,7 +174,7 @@ module.exports = class Player{
 					let temp = this.getTiles();
 					let item = allItemsObj.findItem(itemNumber);
 					if(this.gold >= item.price){
-						let sold = vendObj.buyItemFromVendor(temp.tilex, temp.tiley, itemNumber);
+						let sold = vendObj.buyItemFromVendor(temp.tilex, temp.tiley, itemNumber, client);
 						if(sold){
 							this.addItem(item);
 							this.gold-=item.price;
@@ -230,7 +230,7 @@ module.exports = class Player{
 		this.xp[skill]+=xp;
 		//check for level up
 		if(this.skills[skill] < this.maxlevel){
-			if(this.levelTable[this.skills[skill]+1]<=this.xp[skill]){
+			if(levelTable[this.skills[skill]+1]<=this.xp[skill]){
 				//level up
 				this.skills[skill]++;
 				let temp = 'You leveled up in '+skill+' to level '+this.skills[skill];
@@ -274,7 +274,7 @@ module.exports = class Player{
 		}
 	}
 
-	actions(map, vendObj, treeObj){
+	actions(map, vendObj, treeObj, client){
 		this.action = "";
 		let temp = this.getTiles(map);
 		let tile = temp.tile;
@@ -299,7 +299,7 @@ module.exports = class Player{
 		}
 		//shopping
 		else if(tile >= 432 && tile <= 455){
-			let temp = vendObj.findVendor(tilex, tiley);
+			let temp = vendObj.findVendor(tilex, tiley, client);
 			if(temp.type === "vendor"){
 				this.action = "shopping";
 				return true;
@@ -382,46 +382,63 @@ module.exports = class Player{
 			y: this.y,
 			gold: this.gold,
 			facing: this.facing,
-			xp: this.xp,
-			skills: this.skills,
-			inventory: this.inventory,
-			bankedItems: this.bankedItems
+			xp: JSON.stringify(this.xp),
+			skills: JSON.stringify(this.skills),
+			inventory: JSON.stringify(this.inventory),
+			bankedItems: JSON.stringify(this.bankedItems)
 		}
 	}
 
-	//-------------------------------------------------------------------------------
-	//might need to JSON.stringify objects for comparison
-	//need to update all the other server socket.on methods
-
-	rerunSnapShot(snapshot){
-		if(this.x !== snapshot.x){
-			console.log("rewriting x");
+	rerunSnapShot(client){
+		let temp = [];
+		let different = false;
+		if(this.x !== this.snapshot.x){
+			temp.push('x');
+			temp.push(this.x);
+			different = true;
 		}
-		if(this.y !== snapshot.y){
-			console.log("rewriting y");
+		if(this.y !== this.snapshot.y){
+			temp.push('y')
+			temp.push(this.y);
+			different = true;
 		}
-		if(this.gold !== snapshot.gold){
-			console.log("rewriting gold");
+		if(this.gold !== this.snapshot.gold){
+			temp.push('gold');
+			temp.push(this.gold);
+			different = true;
 		}
-		if(this.facing !== snapshot.facing){
-			console.log("rewriting facing");
+		if(this.facing !== this.snapshot.facing){
+			temp.push('facing');
+			temp.push(this.facing);
+			different = true;
 		}
-		if(this.xp !== snapshot.xp){
-			console.log("rewriting xp");
+		if(JSON.stringify(this.xp) !== this.snapshot.xp){
+			temp.push('xp');
+			temp.push(JSON.stringify(this.xp));
+			different = true;
 		}
-		if(this.skills !== snapshot.skills){
-			console.log("rewriting skills");
+		if(JSON.stringify(this.skills) !== this.snapshot.skills){
+			temp.push('skills');
+			temp.push(JSON.stringify(this.skills));
+			different = true;
 		}
-		if(this.inventory !== snapshot.inventory){
-			console.log("rewriting inventory");
+		if(JSON.stringify(this.inventory) !== this.snapshot.inventory){
+			temp.push('inventory');
+			temp.push(JSON.stringify(this.inventory));
+			different = true;
 		}
-		if(this.bankedItems !== snapshot.bankedItems){
-			console.log("rewriting bankedItems");
+		if(JSON.stringify(this.bankedItems) !== this.snapshot.bankedItems){
+			temp.push('bankedItems');
+			temp.push(JSON.stringify(this.bankedItems));
+			different = true;
+		}
+		if(different){
+			client.hset(this.email, temp);
+			this.snapshot = this.snapShot();
 		}
 	}
 
-	tick(io, socket, treeObj, calcObj, map, itemObj, timeDifference, mapObj, activeplayers, vendObj, droppedItemObj, levelTable, client){
-		let snapshot = this.snapShot();
+	tick(io, socket, treeObj, calcObj, map, itemObj, timeDifference, mapObj, onlinePlayers, vendObj, droppedItemObj, levelTable, client){
 		if(this.action === "woodcutting"){
 			if(!this.emptySpace()){
 				this.action = "";
@@ -467,8 +484,8 @@ module.exports = class Player{
 		}else if(this.moving === true){
 			this.calcMovement(map, timeDifference, mapObj);
 		}
-		this.rerunSnapShot(snapshot);
-		return this.calcPacket(activeplayers, map, vendObj, droppedItemObj);
+		this.rerunSnapShot(client);
+		return this.calcPacket(onlinePlayers, map, vendObj, droppedItemObj, levelTable, client);
 	}
 
 	calcPlayerMap(map){
@@ -498,39 +515,38 @@ module.exports = class Player{
 		return returnObj;
 	}
 
-	calcPacket(activeplayers, map, vendObj, droppedItemObj){
-		let list = activeplayers.getPlayers();
+	calcPacket(onlinePlayers, map, vendObj, droppedItemObj, levelTable, client){
 		let active = [];
-		for(let i = 0, j = list.length; i < j; i++){
-			if(list[i].email !== this.email){
+		for(let i = 0, j = onlinePlayers.length; i < j; i++){
+			if(onlinePlayers[i].email !== this.email){
 				let isInHoriRange = false;
 				let isInVertRange = false;
-				if(this.x > list[i].x){
-					if(this.x-list[i].x <= this.horizontaldraw/2){
+				if(this.x > onlinePlayers[i].x){
+					if(this.x-onlinePlayers[i].x <= this.horizontaldraw/2){
 						isInHoriRange = true;
 					}
 				}else{
-					if(list[i].x-this.x <= this.horizontaldraw/2){
+					if(onlinePlayers[i].x-this.x <= this.horizontaldraw/2){
 						isInHoriRange = true;
 					}
 				}
-				if(this.y > list[i].y){
-					if(this.y-list[i].y <= this.verticaldraw/2){
+				if(this.y > onlinePlayers[i].y){
+					if(this.y-onlinePlayers[i].y <= this.verticaldraw/2){
 						isInVertRange = true;
 					}
 				}else{
-					if(list[i].y-this.y <= this.verticaldraw/2){
+					if(onlinePlayers[i].y-this.y <= this.verticaldraw/2){
 						isInVertRange = true;
 					}
 				}
 				if(isInVertRange && isInHoriRange){
 					let temp = {
-						username: list[i].username,
-						x: list[i].x,
-						y: list[i].y,
-						facing: list[i].facing,
-						moving: list[i].moving,
-						action: list[i].action
+						username: onlinePlayers[i].username,
+						x: onlinePlayers[i].x,
+						y: onlinePlayers[i].y,
+						facing: onlinePlayers[i].facing,
+						moving: onlinePlayers[i].moving,
+						action: onlinePlayers[i].action
 					}
 					active.push(temp);
 				}
@@ -541,7 +557,7 @@ module.exports = class Player{
 		if(this.action === "shopping"){
 			vendor.showVendor = true;
 			let temp = this.getTiles(map);
-			let temp2 = vendObj.findVendor(temp.tilex, temp.tiley);
+			let temp2 = vendObj.findVendor(temp.tilex, temp.tiley, client);
 			vendor.vendorItems = temp2.vendor.items;
 		}
 		let banker = {};
@@ -562,7 +578,7 @@ module.exports = class Player{
 				action: this.action,
 				skills: this.skills,
 				xp: this.xp,
-				levelTable: this.levelTable
+				levelTable: levelTable
 			},
 			items: droppedItemObj.getItems(this.x, this.y, this.email),
 			enemy:{
@@ -581,7 +597,6 @@ module.exports = class Player{
 	}
 
 	calcMovement(map, timeDifference, mapObj){
-		this.moving = false;
 		//count the number of movement keys pressed
 		let count = Object.values(this.movement).reduce((x,y)=>x+y, 0);
 		let movement;
@@ -635,28 +650,33 @@ module.exports = class Player{
 			}
 		}else if(movement === "NE"){
 			this.facing = "NE";
-			let tele = mapObj.checkdoors(Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference)), Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference)));
+			let northEastX = Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference));
+			let northEastY = Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference));
+			let tele = mapObj.checkdoors(northEastX, northEastY);
 			if(tele !== false){
 				this.teleport(tele.telex, tele.teley);
-			}else if(map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference))] === 0){
+			}else if(map.layers["layer2"][northEastY][northEastX] === 0){
 				this.x+=((this.movespeed/2)*timeDifference);
 				this.y-=((this.movespeed/2)*timeDifference);
 				this.moving = true;
-			}else if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference))] === 0){
+			}else if(map.layers["layer2"][Math.floor(this.y)][northEastX] === 0){
 				this.x+=((this.movespeed/2)*timeDifference);
 				this.moving = true;
-			}else if(map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
+			}else if(map.layers["layer2"][northEastY][Math.floor(this.x)] === 0){
 				this.y-=((this.movespeed/2)*timeDifference);
 				this.moving = true;
 			}
 		}else if(movement === "E"){
 			this.facing = "E";
-			let tele = mapObj.checkdoors(Math.floor(this.x+(this.charactersize/100)+(this.movespeed*timeDifference)), Math.floor(this.y));
+			let east = Math.floor(this.x+(this.charactersize/100)+(this.movespeed*timeDifference));
+			let tele = mapObj.checkdoors(east, Math.floor(this.y));
 			if(tele !== false){
 				this.teleport(tele.telex, tele.teley);
-			}else if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x+(this.charactersize/100)+(this.movespeed*timeDifference))] === 0){
+			}else if(map.layers["layer2"][Math.floor(this.y)][east] === 0){
 				this.x+=(this.movespeed*timeDifference);
 				this.moving = true;
+			}else{
+				console.log(east);
 			}
 		}else if(movement === "SE"){
 			this.facing = "SE";

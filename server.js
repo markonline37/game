@@ -1,9 +1,27 @@
-//var redis = require('async-redis');
+/*
+	server is not scalable in current state;
+		client.del('allOnlinePlayers') is a cheap workaround for crashes, wont work when scalable
+		anything that requires data from the database such as vendor items and players requires a read from database first
+		right now the database is used to backup data, with data being set on initial load from database.
+		additionally treesObj and droppedItemsObj controller is controlled by this server
+			will run into similar issues when enemies are added
+
+	todo: 
+		get vendor working by reading the database first
+		same with trees
+		same with droppedItems
+		same with player packet - other players
+*/
 var redis = require('redis');
 var client = redis.createClient();
 client.on('connect', function(){
+	client.del('allOnlinePlayers');
 	console.log('redis connection: connected');
 });
+
+const {promisify} = require('util');
+const hgetallAsync = promisify(client.hgetall).bind(client);
+
 client.on("error", function(error) {
   console.error(error);
 });
@@ -34,28 +52,21 @@ const db = require('./module/db');
 const hasher = require('./module/hash');
 const Player = require('./module/player');
 const Calculator = require('./module/calculator');
-const AllP = require('./module/allPlayers.js');
 const Items = require('./module/items.js');
-const activeP = require('./module/activePlayers.js');
 const Mapp = require('./module/map');
-const SocketH = require('./module/socketHandler');
 const Vendors = require('./module/vendors.js');
 const Trees = require('./module/trees');
 const DroppedItem = require('./module/droppedItems.js')
 
 //objects
-var map, mapObj, itemsObj, calcObj, socketHandler, vendObj, activePlayers, allPlayers, treesObj, droppedItemsObj, levelTable;
+var map, mapObj, itemsObj, calcObj, vendObj, treesObj, droppedItemsObj, levelTable;
 
 (async () => {
 	mapObj = await new Mapp(fs, fssync);
 	map = await mapObj.getMap();
 	itemsObj = await new Items();
 	calcObj = await new Calculator(itemsObj.getFish(), itemsObj.getJunk());
-	socketHandler = await new SocketH(io, hasher, Player);
-	vendObj = await new Vendors(fs, fssync);
-	activePlayers = await new activeP();
-	allPlayers = await new AllP(fs, fssync, Player, charactersize, movespeed, 
-		horizontaldrawdistance, verticaldrawdistance);
+	vendObj = await new Vendors(fs, client);
 	treesObj = await new Trees(map);
 	droppedItemsObj = await new DroppedItem(horizontaldrawdistance/2, verticaldrawdistance/2);
 	try{
@@ -80,7 +91,7 @@ server.listen(5000, function() {
 
 });
 
-var onlinePlayers = [];
+var onlinePlayers = {};
 
 io.on('connection', function(socket) {
 	//new player-------------------------------------------------------------------------
@@ -120,8 +131,14 @@ io.on('connection', function(socket) {
 					'y': startPosY,
 					'gold': 0,
 					'facing': 'S',
-					'xp': '{fishing:0,woodcutting:0}',
-					'skills': '{fishing:0,woodcutting:0}',
+					'xp': JSON.stringify({
+						fishing: 0,
+						woodcutting: 0
+					}),
+					'skills': JSON.stringify({
+						fishing: 0,
+						woodcutting: 0
+					}),
 					'action': '',
 					'inventory': JSON.stringify({
 							slot1: "",
@@ -155,12 +172,12 @@ io.on('connection', function(socket) {
 							slot29: "",
 							slot30: ""
 						}),
-					'bankedItems': ''
+					'bankedItems': JSON.stringify([])
 				});
 				client.sadd('allOnlinePlayers', data.email.toLowerCase());
 				let player = new Player(data.username, data.email, hasher.hash(data.password), socket, startPosX, startPosY, 
 					charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance);
-				onlinePlayers.push({'socket': socket.id, 'user': player});
+				onlinePlayers[socket.id] = player;
 				io.to(socket.id).emit('success');
 				console.log('Player Joined: '+data.email.toLowerCase());
 			} else {
@@ -203,10 +220,11 @@ io.on('connection', function(socket) {
 					if(!errors){
 						client.hgetall(data.email.toLowerCase(), function(err, hash){
 							client.sadd('allOnlinePlayers', data.email.toLowerCase());
-							let player = new Player(hash.username, hash.email, hash.password, hash.socket, hash.x, hash.y,
-								charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance, hash.gold, hash.facing, hash.xp, 
-								hash.skills, hash.inventory, hash.bankedItems);
-							onlinePlayers.push({'socket': socket.id, 'user': player});
+							let player = new Player(hash.username, hash.email, hash.password, hash.socket, parseFloat(hash.x), 
+								parseFloat(hash.y), charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance, 
+								parseInt(hash.gold), hash.facing, JSON.parse(hash.xp), JSON.parse(hash.skills), 
+								JSON.parse(hash.inventory), JSON.parse(hash.bankedItems));
+							onlinePlayers[socket.id] = player;
 							console.log('Player Joined: '+data.email.toLowerCase());
 							io.to(socket.id).emit('success');
 						});
@@ -219,14 +237,12 @@ io.on('connection', function(socket) {
 	});
 
 	socket.on('disconnect', function(){
-		for(let i = 0, j = onlinePlayers.length; i<j; i++){
-			if(onlinePlayers[i].socket === socket.id){
-				console.log('Player Disconnected: '+onlinePlayers[i].email);
-				client.srem('allOnlinePlayers', onlinePlayers[i].email);
-				onlinePlayers.splice(i, 1);
-				break;
-			}
-		}		
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			console.log('Player Disconnected: '+onlinePlayers[socket.id].email);
+			client.srem('allOnlinePlayers', onlinePlayers[socket.id].email);
+			delete onlinePlayers[socket.id];
+		}	
 	});
 
 	socket.on('movement', function(data){
@@ -243,69 +259,94 @@ io.on('connection', function(socket) {
 	});
 
 	socket.on('action', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.action(user, data, socket.id, activePlayers, io, map, vendObj, treesObj);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			let temp = player.actions(map, vendObj, treesObj, client);
+			if(typeof temp === 'string' || temp instanceof String){
+				io.to(socket.id).emit('Game Message', temp);
+			}
 		}
 	});
 
 	socket.on('drop item', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.dropItem(user, data, socket.id, io, droppedItemsObj);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			let temp = player.dropItem(data, droppedItemsObj)
+			if(typeof temp === 'string' || temp instanceof String){
+				io.to(socket.id).emit('Game Message', temp);
+			}
 		}
 	});
 
 	socket.on('swap item', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.swapItem(user, data, socket.id, io);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			let temp = player.swapItem(data);
+			if(typeof temp === 'string' || temp instanceof String){
+				io.to(socket.id).emit('Game Message', temp);
+			}
 		}
 	});
 
 	socket.on('clicked', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.clicked(user, data, socket.id, io, droppedItemsObj);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			let temp = player.clicked(data, droppedItemsObj)
+			if(typeof temp === 'string' || temp instanceof String){
+				io.to(socket.id).emit('Game Message', temp);
+			}
 		}
 	});
 
 	socket.on('sell item', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.sellItem(user, data, socket.id, io, vendObj);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			let temp = player.sellItem(data, vendObj, client);
+			if(typeof temp === 'string' || temp instanceof String){
+				io.to(socket.id).emit('Game Message', temp);
+			}
 		}
 	});
 
 	socket.on('buy item', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.buyItem(user, data, socket.id, io, vendObj, itemsObj);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			let temp = player.buyItem(data, vendObj, itemsObj, client);
+			if(typeof temp === 'string' || temp instanceof String){
+				io.to(socket.id).emit('Game Message', temp);
+			}
 		}
 	});
 
 	socket.on('stop', function(){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.stop(user);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			player.stop();
 		}
 	});
 
 	socket.on('bank deposit', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.bankDeposit(user, data, socket.id, io);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			let temp = player.bankDeposit(data);
+			if(typeof temp === 'string' || temp instanceof String){
+				io.to(socket.id).emit('Game Message', temp);
+			}
 		}
 	});
 
 	socket.on('bank withdraw', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.bankWithdraw(user, data, socket.id, io);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			let temp = player.bankWithdraw(data);
+			if(typeof temp === 'string' || temp instanceof String){
+				io.to(socket.id).emit('Game Message', temp);
+			}
 		}
 	});
-});
+})
 
+let toggle = true;
 //main loop
 let lastUpdateTime = (new Date()).getTime();
 setInterval(function() {
@@ -313,32 +354,20 @@ setInterval(function() {
 	droppedItemsObj.controller();
 	let currentTime = (new Date()).getTime();
 	let timeDifference = currentTime - lastUpdateTime;
-	for(let i=0, j=onlinePlayers.length; i<j; i++){
-		let packet = onlinePlayers[i].user.tick(io, onlinePlayers[i].socket, treesObj, calcObj, map, 
-			itemsObj, timeDifference, mapObj, activePlayers, vendObj, droppedItemsObj, levelTable, client);
-		io.to(onlinePlayers[i].socket).emit('update', packet);
+	for(let i in onlinePlayers){
+		let packet = onlinePlayers[i].tick(io, i, treesObj, calcObj, map, itemsObj, timeDifference, 
+			mapObj, onlinePlayers, vendObj, droppedItemsObj, levelTable, client);
+		io.to(i).emit('update', packet);
 	}
 	lastUpdateTime = currentTime;
 }, 1000 / gamespeed);
 
-//backup every 5 minutes
-setInterval(function(){
-	backup();
-}, 300000);
-
-async function backup(){
-	await allPlayers.backup(activePlayers);
-	await vendObj.backup();
-	return null;
-}
-
 function findPlayer(socket){
-	for(let i = 0, j = onlinePlayers.length; i<j; i++){
-		if(onlinePlayers[i].socket === socket){
-			return onlinePlayers[i].user;
-		}
+	if(socket in onlinePlayers){
+		return onlinePlayers[socket];
+	}else{
+		return false;
 	}
-	return false;
 }
 
 const readline = require('readline');
@@ -353,120 +382,18 @@ let question = function(q){
 (async () => {
 	while(true){
 		let answer = await question('');
+		let user;
 		switch(answer){
-			case "dropped":
-			let user5 = allPlayers.getIndividualPlayer('email', 'markonline37@gmail.com');
-				console.log(droppedItemsObj.getItems(user5.x, user5.y, user5.email));
-				break;
 			case "trees":
 				console.log(treesObj.getTrees());
-				break;
-			case "packet":
-				let user4 = allPlayers.getIndividualPlayer('email', 'markonline37@gmail.com');
-				console.log(user4.calcPacket(activePlayers, map, vendObj, droppedItemsObj));
 				break;
 			case "processMap":
 				mapObj.processMap();
 				map = mapObj.getMap();
 				break;
-			case "active":
-				console.log(activePlayers.getPlayers());
-				break;
-			case "all":
-				console.log(allPlayers.getAllPlayers());
-				break;
-			case "empty":
-				let user = activePlayers.findPlayer('email', 'markonline37@gmail.com');
-				user.inventory = {
-					slot1: "",
-					slot2: "",
-					slot3: "",
-					slot4: "",
-					slot5: "",
-					slot6: "",
-					slot7: "",
-					slot8: "",
-					slot9: "",
-					slot10: "",
-					slot11: "",
-					slot12: "",
-					slot13: "",
-					slot14: "",
-					slot15: "",
-					slot16: "",
-					slot17: "",
-					slot18: "",
-					slot19: "",
-					slot20: "",
-					slot21: "",
-					slot22: "",
-					slot23: "",
-					slot24: "",
-					slot25: "",
-					slot26: "",
-					slot27: "",
-					slot28: "",
-					slot29: "",
-					slot30: ""
-				}
-				break;
-			case "backup":
-				backup();
-				break;
-			case "fish0":
-				let user2 = activePlayers.findPlayer('email', 'markonline37@gmail.com');
-				user2.skills.fishing = 0;
-				user2.xp.fishing = 0;
-				user2.inventory = {
-					slot1: "",
-					slot2: "",
-					slot3: "",
-					slot4: "",
-					slot5: "",
-					slot6: "",
-					slot7: "",
-					slot8: "",
-					slot9: "",
-					slot10: "",
-					slot11: "",
-					slot12: "",
-					slot13: "",
-					slot14: "",
-					slot15: "",
-					slot16: "",
-					slot17: "",
-					slot18: "",
-					slot19: "",
-					slot20: "",
-					slot21: "",
-					slot22: "",
-					slot23: "",
-					slot24: "",
-					slot25: "",
-					slot26: "",
-					slot27: "",
-					slot28: "",
-					slot29: "",
-					slot30: ""
-				}
-				break;
-			case "vendor":
-				let user11 = activePlayers.findPlayer('email', 'markonline37@gmail.com');
-				console.log(vendObj.findVendor(226, 29));
-				break;
-			case "equipRiverRod":
-				activePlayers.findPlayer('email', 'markonline37@gmail.com').equipMainHand("riverRod");
-				break;
-			case "equipOceanRod":
-				activePlayers.findPlayer('email', 'markonline37@gmail.com').equipMainHand("oceanRod");
-				break;
-			case "dropped":
-				console.log(JSON.stringify(activePlayers.findPlayer('email', 'markonline37@gmail.com').droppedItemList,null,2));
-				break;
 			case "q":
 			case "exit":
-				console.log("Backing up and exiting...");	
-				await backup();
+				console.log("exiting...");	
 				process.exit();
 				break;
 			default:
