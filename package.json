@@ -9,8 +9,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "async-redis": "^1.1.7",
+    "bluebird": "^3.7.2",
     "express": "^4.17.1",
+    "ioredis": "^4.16.0",
     "mysql": "^2.17.1",
+    "redis": "^3.0.2",
     "socket.io": "^2.2.0"
   }
 }

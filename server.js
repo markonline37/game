@@ -1,4 +1,63 @@
-// Dependencies
+/*
+	todo:
+		Functionality to move to master when cluster is implemented;
+			client.del('allOnlinePlayers')
+			tree.controller - setup pub/sub
+			droppedItems.controller - setup pub/sub
+			master maintains a copy of allonlineplayers - function to get all players on worker start
+		
+		Finish map
+
+		Add woodcutting animation
+
+*/
+//redis general connection ---------------------------------------------
+var redis = require('redis');
+var client = redis.createClient();
+client.on('connect', function(){
+	client.del('allOnlinePlayers');
+	console.log('redis connection: connected');
+});
+client.on("error", function(error) {
+  console.error(error);
+});
+
+//redis pub/sub ---------------------------------------------------------
+const ioredis = require('ioredis');
+const clientVendorSub = new ioredis();
+const clientPlayerSub = new ioredis();
+const clientPub = new ioredis();
+//vendor sub --------------------------------------------------------
+const vendorChannel = 'vendorChannel';
+clientVendorSub.subscribe(vendorChannel, (error, result) => {
+	if(error !== null){
+		console.log("Error subscribing to "+vendorChannel+": "+error);
+	}
+});
+clientVendorSub.on('message', (vendorChannel, message) => {
+	vendObj.updateVendors(message);
+});
+//player sub -----------------------------------------------------------
+const playerChannel = 'playerChannel';
+clientPlayerSub.subscribe(playerChannel, (error, result) => {
+	if(error !== null){
+		console.log("Error subscribing to "+playerChannel+": "+error);
+	}
+});
+clientPlayerSub.on('message', (playerChannel, message) => {
+	let data = JSON.parse(message);
+	if(data.type === "disconnect"){
+		delete allOnlinePlayers[data.unique];
+	}else if(data.type === "update"){
+		allOnlinePlayers[data.unique] = data.data;
+	}
+});
+
+
+const {promisify} = require('util');
+const hgetallAsync = promisify(client.hgetall).bind(client);
+
+
 var express = require('express');
 var http = require('http');
 var path = require('path');
@@ -25,26 +84,30 @@ const db = require('./module/db');
 const hasher = require('./module/hash');
 const Player = require('./module/player');
 const Calculator = require('./module/calculator');
-const AllP = require('./module/allPlayers.js');
 const Items = require('./module/items.js');
-const activeP = require('./module/activePlayers.js');
 const Mapp = require('./module/map');
-const SocketH = require('./module/socketHandler');
 const Vendors = require('./module/vendors.js');
+const Trees = require('./module/trees');
+const DroppedItem = require('./module/droppedItems.js')
 
 //objects
-var map, mapObj, itemsObj, calcObj, socketHandler, vendObj, activePlayers, allPlayers;
+var map, mapObj, itemsObj, calcObj, vendObj, treesObj, droppedItemsObj, levelTable;
 
 (async () => {
 	mapObj = await new Mapp(fs, fssync);
 	map = await mapObj.getMap();
 	itemsObj = await new Items();
 	calcObj = await new Calculator(itemsObj.getFish(), itemsObj.getJunk());
-	socketHandler = await new SocketH(io, hasher, Player);
-	vendObj = await new Vendors(fs, fssync);
-	activePlayers = await new activeP();
-	allPlayers = await new AllP(fs, fssync, Player, charactersize, movespeed, 
-		horizontaldrawdistance, verticaldrawdistance);
+	let vendorhash = await hgetallAsync('vendor');
+	vendObj = await new Vendors(fs, vendorhash);
+	treesObj = await new Trees(map);
+	droppedItemsObj = await new DroppedItem(horizontaldrawdistance/2, verticaldrawdistance/2);
+	try{
+		let temp = fs.readFileSync('./storage/levelTable.json');
+		levelTable = JSON.parse(temp);
+	}catch(err){
+		console.log("error loading levelTable: "+err);
+	}
 	console.log("Server Load Complete");
 })();
 
@@ -61,133 +124,314 @@ server.listen(5000, function() {
 
 });
 
+var onlinePlayers = {};
+var allOnlinePlayers = {};
+
 io.on('connection', function(socket) {
-	
+	//new player-------------------------------------------------------------------------
 	socket.on('new player', function(data) {
-		socketHandler.newPlayer(data, socket.id, allPlayers, activePlayers, startPosX, startPosY, charactersize, movespeed, 
-			horizontaldrawdistance, verticaldrawdistance);
+		client.exists(data.email.toLowerCase(), function(err, reply){
+			let errors = false;
+			let error = {
+				username: false,
+				email: false,
+				password: false
+			};
+			let exists;
+			reply === 1 ? exists = true : exists = false;
+			if(data.username.length < 3 || data.username.length > 32){
+				error.username = "Username must be between 3 and 32 characters";
+				errors = true;
+			}
+			if(exists){
+				error.email = "Email already exists";
+				errors = true;
+			}else if(!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.email)){
+				error.email = "Email is not in a valid format";
+				errors = true;
+			}
+			if(data.password.length < 8){
+				error.password = "Password must be be at least 8 characters";
+	    		errors = true;
+			}
+			
+			if(!errors){
+				client.hmset(data.email.toLowerCase(), {
+					'username': data.username,
+					'email': data.email.toLowerCase(),
+					'password': hasher.hash(data.password),
+					'socket': socket.id,
+					'x': startPosX,
+					'y': startPosY,
+					'gold': 0,
+					'facing': 'S',
+					'xp': JSON.stringify({
+						fishing: 0,
+						woodcutting: 0
+					}),
+					'skills': JSON.stringify({
+						fishing: 0,
+						woodcutting: 0
+					}),
+					'action': '',
+					'inventory': JSON.stringify({
+							slot1: "",
+							slot2: "",
+							slot3: "",
+							slot4: "",
+							slot5: "",
+							slot6: "",
+							slot7: "",
+							slot8: "",
+							slot9: "",
+							slot10: "",
+							slot11: "",
+							slot12: "",
+							slot13: "",
+							slot14: "",
+							slot15: "",
+							slot16: "",
+							slot17: "",
+							slot18: "",
+							slot19: "",
+							slot20: "",
+							slot21: "",
+							slot22: "",
+							slot23: "",
+							slot24: "",
+							slot25: "",
+							slot26: "",
+							slot27: "",
+							slot28: "",
+							slot29: "",
+							slot30: ""
+						}),
+					'bankedItems': JSON.stringify([])
+				});
+				client.sadd('allOnlinePlayers', data.email.toLowerCase());
+				clientPub.publish(playerChannel, JSON.stringify({
+					type: "update",
+					unique: data.email.toLowerCase(),
+					data: {
+						username: data.username,
+						x: startPosX,
+						y: startPosY,
+						facing: "S",
+						moving: false,
+						action: ""
+					}
+				}));
+				let player = new Player(data.username, data.email, hasher.hash(data.password), socket, startPosX, startPosY, 
+					charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance);
+				onlinePlayers[socket.id] = player;
+				io.to(socket.id).emit('success');
+				console.log('Player Joined: '+data.email.toLowerCase());
+			} else {
+				io.to(socket.id).emit('failed new user', error);
+			}
+		});
 	});
 
+	//returning player -----------------------------------------------------------------------
 	socket.on('returning player', function(data){
-		socketHandler.returningPlayer(data, allPlayers, activePlayers, socket.id);
+		let errors = false;
+		let error = {
+			email: false,
+			password: false
+		};
+		if(!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.email)){
+			error.email = "Email is not in a valid format";
+			errors = true;
+		}
+		if(data.password.length < 8){
+			error.password = "Invalid password";
+			errors = true;
+		}
+		
+		client.exists(data.email.toLowerCase(), function(err, reply){
+			if(reply !== 1){
+				error.email = "Email address not found";
+				errors = true;
+			}
+			client.hget(data.email.toLowerCase(), 'password', function(err, reply){
+				if(hasher.hash(data.password) !== reply){
+					error.password = "Password doesn't match";
+					errors = true;
+				}
+				client.smembers("allOnlinePlayers", function(err, result){
+					if(result.includes(data.email.toLowerCase())){
+						error.email = "Account already in use";
+						errors = true;
+					}
+					if(!errors){
+						client.hgetall(data.email.toLowerCase(), function(err, hash){
+							client.sadd('allOnlinePlayers', data.email.toLowerCase());
+							let x = parseFloat(hash.x);
+							let y = parseFloat(hash.y);
+							let player = new Player(hash.username, hash.email, hash.password, hash.socket, x, 
+								y, charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance, 
+								parseInt(hash.gold), hash.facing, JSON.parse(hash.xp), JSON.parse(hash.skills), 
+								JSON.parse(hash.inventory), JSON.parse(hash.bankedItems));
+							onlinePlayers[socket.id] = player;
+							clientPub.publish(playerChannel, JSON.stringify({
+								type: "update",
+								unique: data.email.toLowerCase(),
+								data: {
+									username: hash.username,
+									x: x,
+									y: y,
+									facing: hash.facing,
+									moving: false,
+									action: ""
+								}
+							}));
+							console.log('Player Joined: '+data.email.toLowerCase());
+							io.to(socket.id).emit('success');
+						});
+					}else{
+						io.to(socket.id).emit('failed login', error);
+					}
+				});
+			});
+		});	
 	});
 
 	socket.on('disconnect', function(){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			if(lastPacket.hasOwnProperty(user.email)){
-				delete lastPacket[user];
-			}
-			socketHandler.disconnect(socket.id, activePlayers, allPlayers);
-		}
-			
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			clientPub.publish(playerChannel, JSON.stringify({
+				type: "disconnect",
+				unique: player.email,
+			}));
+			console.log('Player Disconnected: '+onlinePlayers[socket.id].email);
+			client.srem('allOnlinePlayers', onlinePlayers[socket.id].email);
+			delete onlinePlayers[socket.id];
+		}	
 	});
 
 	socket.on('movement', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.movement(user, data, socket.id, activePlayers);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			player.movement = data;
+			if(data.left === true || data.right === true || data.up === true || data.down === true){
+				player.moving = true;
+				player.action = "";
+			}else{
+				player.moving = false;
+			}
 		}
 	});
 
 	socket.on('action', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.action(user, data, socket.id, activePlayers, io, map, vendObj);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			let temp = player.actions(map, vendObj, treesObj, client);
+			if(typeof temp === 'string' || temp instanceof String){
+				io.to(socket.id).emit('Game Message', temp);
+			}
 		}
 	});
 
 	socket.on('drop item', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.dropItem(user, data, socket.id, io);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			let temp = player.dropItem(data, droppedItemsObj)
+			if(typeof temp === 'string' || temp instanceof String){
+				io.to(socket.id).emit('Game Message', temp);
+			}
 		}
 	});
 
 	socket.on('swap item', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.swapItem(user, data, socket.id, io);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			let temp = player.swapItem(data);
+			if(typeof temp === 'string' || temp instanceof String){
+				io.to(socket.id).emit('Game Message', temp);
+			}
 		}
 	});
 
 	socket.on('clicked', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.clicked(user, data, socket.id, io);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			let temp = player.clicked(data, droppedItemsObj)
+			if(typeof temp === 'string' || temp instanceof String){
+				io.to(socket.id).emit('Game Message', temp);
+			}
 		}
 	});
 
 	socket.on('sell item', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.sellItem(user, data, socket.id, io, vendObj);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			let temp = player.sellItem(data, vendObj, client, clientPub, vendorChannel);
+			if(typeof temp === 'string' || temp instanceof String){
+				io.to(socket.id).emit('Game Message', temp);
+			}
 		}
 	});
 
 	socket.on('buy item', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.buyItem(user, data, socket.id, io, vendObj, itemsObj);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			let temp = player.buyItem(data, vendObj, itemsObj, client, clientPub, vendorChannel);
+			if(typeof temp === 'string' || temp instanceof String){
+				io.to(socket.id).emit('Game Message', temp);
+			}
 		}
 	});
 
 	socket.on('stop', function(){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.stop(user);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			player.stop();
 		}
 	});
 
 	socket.on('bank deposit', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.bankDeposit(user, data, socket.id, io);
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			let temp = player.bankDeposit(data);
+			if(typeof temp === 'string' || temp instanceof String){
+				io.to(socket.id).emit('Game Message', temp);
+			}
 		}
 	});
 
 	socket.on('bank withdraw', function(data){
-		let user = activePlayers.findPlayer('socket', socket.id);
-		if(user !== false){
-			socketHandler.bankWithdraw(user, data, socket.id, io);
-		}
-	});
-});
-
-//main loop
-let lastPacket = {};
-let lastUpdateTime = (new Date()).getTime();
-setInterval(function() {
-	let currentTime = (new Date()).getTime();
-	let timeDifference = currentTime - lastUpdateTime;
-	let players = activePlayers.getPlayers();
-	for(let i=0, j=players.length; i<j; i++){
-		let user = players[i];
-		if(user.action !== ""){
-			if(user.action === "fishing"){
-				let temp = user.tickFish(io, user.socket, calcObj);
-				if(typeof temp === 'string' || temp instanceof String){
-					io.to(user.socket).emit('Game Message', temp);
-				}
+		let player = findPlayer(socket.id);
+		if(player !== false){
+			let temp = player.bankWithdraw(data);
+			if(typeof temp === 'string' || temp instanceof String){
+				io.to(socket.id).emit('Game Message', temp);
 			}
 		}
-		user.calcMovement(map, timeDifference, mapObj);
-		let packet = user.calcPacket(activePlayers, map, vendObj);
-		io.to(user.socket).emit('update', packet);
-		lastPacket[user.email]=packet;
+	});
+})
+
+let toggle = true;
+//main loop
+let lastUpdateTime = (new Date()).getTime();
+setInterval(function() {
+	treesObj.controller(map);
+	droppedItemsObj.controller();
+	let currentTime = (new Date()).getTime();
+	let timeDifference = currentTime - lastUpdateTime;
+	for(let i in onlinePlayers){
+		let packet = onlinePlayers[i].tick(io, i, treesObj, calcObj, map, itemsObj, timeDifference, 
+			mapObj, allOnlinePlayers, vendObj, droppedItemsObj, levelTable, client, clientPub, playerChannel);
+		io.to(i).emit('update', packet);
 	}
 	lastUpdateTime = currentTime;
 }, 1000 / gamespeed);
 
-//backup every 5 minutes
-setInterval(function(){
-	backup();
-}, 300000);
-
-async function backup(){
-	await allPlayers.backup(activePlayers);
-	await vendObj.backup();
-	return null;
+function findPlayer(socket){
+	if(socket in onlinePlayers){
+		return onlinePlayers[socket];
+	}else{
+		return false;
+	}
 }
 
 const readline = require('readline');
@@ -202,113 +446,18 @@ let question = function(q){
 (async () => {
 	while(true){
 		let answer = await question('');
+		let user;
 		switch(answer){
-			case "packet":
-				let user4 = allPlayers.getIndividualPlayer('email', 'markonline37@gmail.com');
-				console.log(user4.calcPacket(activePlayers, map, vendObj));
+			case "trees":
+				console.log(treesObj.getTrees());
 				break;
 			case "processMap":
 				mapObj.processMap();
 				map = mapObj.getMap();
 				break;
-			case "active":
-				console.log(activePlayers.getPlayers());
-				break;
-			case "all":
-				console.log(allPlayers.getAllPlayers());
-				break;
-			case "empty":
-				let user = activePlayers.findPlayer('email', 'markonline37@gmail.com');
-				user.inventory = {
-					slot1: "",
-					slot2: "",
-					slot3: "",
-					slot4: "",
-					slot5: "",
-					slot6: "",
-					slot7: "",
-					slot8: "",
-					slot9: "",
-					slot10: "",
-					slot11: "",
-					slot12: "",
-					slot13: "",
-					slot14: "",
-					slot15: "",
-					slot16: "",
-					slot17: "",
-					slot18: "",
-					slot19: "",
-					slot20: "",
-					slot21: "",
-					slot22: "",
-					slot23: "",
-					slot24: "",
-					slot25: "",
-					slot26: "",
-					slot27: "",
-					slot28: "",
-					slot29: "",
-					slot30: ""
-				}
-				break;
-			case "backup":
-				backup();
-				break;
-			case "fish0":
-				let user2 = activePlayers.findPlayer('email', 'markonline37@gmail.com');
-				user2.skills.fishing = 0;
-				user2.xp.fishing = 0;
-				user2.inventory = {
-					slot1: "",
-					slot2: "",
-					slot3: "",
-					slot4: "",
-					slot5: "",
-					slot6: "",
-					slot7: "",
-					slot8: "",
-					slot9: "",
-					slot10: "",
-					slot11: "",
-					slot12: "",
-					slot13: "",
-					slot14: "",
-					slot15: "",
-					slot16: "",
-					slot17: "",
-					slot18: "",
-					slot19: "",
-					slot20: "",
-					slot21: "",
-					slot22: "",
-					slot23: "",
-					slot24: "",
-					slot25: "",
-					slot26: "",
-					slot27: "",
-					slot28: "",
-					slot29: "",
-					slot30: ""
-				}
-				break;
-			case "vendor":
-				let user11 = activePlayers.findPlayer('email', 'markonline37@gmail.com');
-				console.log(vendObj.findVendor(226, 29));
-				break;
-			case "equipRiverRod":
-				activePlayers.findPlayer('email', 'markonline37@gmail.com').equipMainHand("riverRod");
-				break;
-			case "equipOceanRod":
-				activePlayers.findPlayer('email', 'markonline37@gmail.com').equipMainHand("oceanRod");
-				break;
-			case "dropped":
-				console.log(JSON.stringify(activePlayers.findPlayer('email', 'markonline37@gmail.com').droppedItemList,null,2));
-				break;
 			case "q":
 			case "exit":
-				console.log("Backing up and exiting...");	
-				await backup();
+				console.log("exiting...");	
 				process.exit();
 				break;
 			default:

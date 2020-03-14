@@ -84,36 +84,13 @@ module.exports = class Player{
 			this.inventory = inventory
 		}
 		this.equippedMainHand = "riverRod";
-		this.droppedItemList = [];
 		this.maxlevel = 20;
-		this.levelTable = {
-			"1": 100, //110
-			"2": 210, //122
-			"3": 332, //136
-			"4": 468, //154
-			"5": 622, //176
-			"6": 798, //202
-			"7": 1033, //235
-			"8": 1268, //274
-			"9": 1542, //324
-			"10": 1866, //386
-			"11": 2252, //463
-			"12": 2715, //560
-			"13": 3275, //683
-			"14": 3958, //841
-			"15": 4799, //1043
-			"16": 5842, //1303
-			"17": 7145, //1642
-			"18": 8787, //2086
-			"19": 10873, //2670
-			"20": 13543 //3445
-		};
 		if(bankedItems === undefined){
 			this.bankedItems = [];
 		}else{
 			this.bankedItems = bankedItems;
 		}
-		
+		this.snapshot = this.snapShot();
 	}
 
 	stop(){
@@ -171,13 +148,13 @@ module.exports = class Player{
 		}
 	}
 
-	sellItem(slot, vendObj){
+	sellItem(slot, vendObj, client, clientPub, vendorChannel){
 		if(slot >= 1 && slot <= 30){
 			if(this.action === "shopping"){
 				let item = this.inventory["slot"+slot];
 				if(item !== "" && item !== undefined){
 					let temp = this.getTiles();
-					let sold = vendObj.sellItemtoVendor(temp.tilex, temp.tiley, item);
+					let sold = vendObj.sellItemtoVendor(temp.tilex, temp.tiley, item, client, clientPub, vendorChannel);
 					if(sold){
 						this.gold+=item.price;
 						this.inventory["slot"+slot] = "";
@@ -188,7 +165,7 @@ module.exports = class Player{
 		}
 	}
 
-	buyItem(itemNumber, vendObj, allItemsObj){
+	buyItem(itemNumber, vendObj, allItemsObj, client, clientPub, vendorChannel){
 		if(this.action === "shopping"){
 			if(!this.emptySpace()){
 				return "Inventory is full";
@@ -197,7 +174,7 @@ module.exports = class Player{
 					let temp = this.getTiles();
 					let item = allItemsObj.findItem(itemNumber);
 					if(this.gold >= item.price){
-						let sold = vendObj.buyItemFromVendor(temp.tilex, temp.tiley, itemNumber);
+						let sold = vendObj.buyItemFromVendor(temp.tilex, temp.tiley, itemNumber, client, clientPub, vendorChannel);
 						if(sold){
 							this.addItem(item);
 							this.gold-=item.price;
@@ -215,16 +192,15 @@ module.exports = class Player{
 		this.equippedMainHand = input;
 	}
 
-	clicked(data){
-		let itemPosition = null;
-		for(let i = 0, j = this.droppedItemList.length; i<j; i++){
-			let t = this.droppedItemList[i];
-			if(data.x >= t.x-0.5 && data.x <= t.x+0.5 && data.y >= t.y-0.5 && data.y <= t.y+0.5){
-				itemPosition = i;
+	//pickup dropped item
+	clicked(data, droppedItemObj){
+		if(!this.emptySpace()){
+			return "Inventory is full";
+		}else{
+			let item = droppedItemObj.pickupItem(data, this.x, this.y, this.email);
+			if(item !== false && item !== undefined && item !== null){
+				this.addItem(item);
 			}
-		}
-		if(itemPosition !== null){
-			return this.pickUpItem(this.droppedItemList[itemPosition], itemPosition);
 		}
 	}
 
@@ -238,10 +214,10 @@ module.exports = class Player{
 		}
 	}
 
-	dropItem(slot){
+	dropItem(slot, droppedItemObj){
 		if(this.inventory["slot"+slot] !== "" && slot !== null){
 			let temp = this.inventory["slot"+slot];
-			this.droppedItem(temp);
+			droppedItemObj.dropItem(this.x, this.y, temp, this.email);
 			this.inventory["slot"+slot] = "";
 			if(temp !== undefined){
 				return 'Dropped item: '+temp.name;
@@ -249,56 +225,12 @@ module.exports = class Player{
 		}
 	}
 
-	droppedItem(input){
-		let item = {
-			type: input,
-			x: this.x,
-			y: this.y
-		}
-		this.droppedItemList.push(item);
-		setTimeout(function(){
-			let foundItem = null;
-			for(let i = 0, j = this.droppedItemList.length; i<j; i++){
-				if(this.droppedItemList[i].id === item.id){
-					this.droppedItemList.splice(i, 1);
-					break;
-				}
-			}
-		}.bind(this), 60000);
-	}
-
-	pickUpItem(item, i){
-		if(!this.emptySpace()){
-			return "Inventory is full";
-		}
-		let distanceX;
-		let distanceY;
-		let pickUpDistance = 5;
-		if(this.x > item.x){
-			distanceX = this.x - item.x;
-		}else{
-			distanceX = item.x - this.x;
-		}
-		if(this.y > item.y){
-			distanceY = this.y - item.y;
-		}else{
-			distanceY = item.y - this.y;
-		}
-		if((distanceY >= 0 && distanceY <= pickUpDistance)&&(distanceX >=0 && distanceX <= pickUpDistance)){
-			this.addItem(item.type);
-			this.droppedItemList.splice(i, 1);
-			return "Picked up item: "+item.type.name;
-		}else{
-			return "Not within range of item";
-		}
-	}
-
-	addXP(skill, xp, io, socket){
+	addXP(skill, xp, io, socket, levelTable){
 		//apply xp
 		this.xp[skill]+=xp;
 		//check for level up
 		if(this.skills[skill] < this.maxlevel){
-			if(this.levelTable[this.skills[skill]+1]<=this.xp[skill]){
+			if(levelTable[this.skills[skill]+1]<=this.xp[skill]){
 				//level up
 				this.skills[skill]++;
 				let temp = 'You leveled up in '+skill+' to level '+this.skills[skill];
@@ -342,7 +274,7 @@ module.exports = class Player{
 		}
 	}
 
-	actions(map, vendObj){
+	actions(map, vendObj, treeObj, client){
 		this.action = "";
 		let temp = this.getTiles(map);
 		let tile = temp.tile;
@@ -367,7 +299,7 @@ module.exports = class Player{
 		}
 		//shopping
 		else if(tile >= 432 && tile <= 455){
-			let temp = vendObj.findVendor(tilex, tiley);
+			let temp = vendObj.findVendor(tilex, tiley, client);
 			if(temp.type === "vendor"){
 				this.action = "shopping";
 				return true;
@@ -375,6 +307,10 @@ module.exports = class Player{
 				this.action = "banking";
 				return true;
 			}
+		}
+
+		else if((tile >= 16 && tile <= 21) || (tile >= 24 && tile <= 29)){
+			this.action = "woodcutting";
 		}
 	}
 
@@ -440,29 +376,149 @@ module.exports = class Player{
 		}
 	}
 
-	tickFish(io, socket, calcObj){
-		if(!this.emptySpace()){
-			this.action = "";
-			return "Inventory is full";
-		}else{
-			if(!this.currentlyFishing){
-				this.currentlyFishing = true;
-				let timer = Math.floor(Math.random() * 7000)+2000;
-				setTimeout(function(){
-					if(this.action === "fishing"){
-						let fish = calcObj.calcFishingLoot(this.skills.fishing);
-						this.addItem(fish);
-						if(fish.type === "fish"){
-							this.addXP('fishing', fish.xp, io, socket);
-						}
-						this.currentlyFishing = false;
-						io.to(socket).emit('Game Message', "Caught: "+fish.name);
-					}else{
-						this.currentlyFishing = false;
-					}
-				}.bind(this), timer);
-			}
+	snapShot(){
+		return {
+			x: this.x,
+			y: this.y,
+			gold: this.gold,
+			facing: this.facing,
+			xp: JSON.stringify(this.xp),
+			skills: JSON.stringify(this.skills),
+			inventory: JSON.stringify(this.inventory),
+			bankedItems: JSON.stringify(this.bankedItems),
+			action: this.action,
+			moving: this.moving
 		}
+	}
+
+	rerunSnapShot(client, clientPub, playerChannel){
+		let temp = [];
+		let different = false;
+		let xcheck = false;
+		let ycheck = false;
+		let facingcheck = false;
+		let actioncheck = false;
+		let movingcheck = false;
+		if(this.x !== this.snapshot.x){
+			temp.push('x');
+			temp.push(this.x);
+			different = true;
+			xcheck = true;
+		}
+		if(this.y !== this.snapshot.y){
+			temp.push('y')
+			temp.push(this.y);
+			different = true;
+			ycheck = true;
+		}
+		if(this.gold !== this.snapshot.gold){
+			temp.push('gold');
+			temp.push(this.gold);
+			different = true;
+		}
+		if(this.facing !== this.snapshot.facing){
+			temp.push('facing');
+			temp.push(this.facing);
+			different = true;
+			facingcheck = true;
+		}
+		if(this.moving !== this.snapshot.moving){
+			movingcheck = true;
+		}
+		if(this.action !== this.snapshot.action){
+			actioncheck = true;
+		}
+		if(JSON.stringify(this.xp) !== this.snapshot.xp){
+			temp.push('xp');
+			temp.push(JSON.stringify(this.xp));
+			different = true;
+		}
+		if(JSON.stringify(this.skills) !== this.snapshot.skills){
+			temp.push('skills');
+			temp.push(JSON.stringify(this.skills));
+			different = true;
+		}
+		if(JSON.stringify(this.inventory) !== this.snapshot.inventory){
+			temp.push('inventory');
+			temp.push(JSON.stringify(this.inventory));
+			different = true;
+		}
+		if(JSON.stringify(this.bankedItems) !== this.snapshot.bankedItems){
+			temp.push('bankedItems');
+			temp.push(JSON.stringify(this.bankedItems));
+			different = true;
+		}
+		if(xcheck || ycheck || facingcheck || actioncheck || movingcheck){
+			clientPub.publish(playerChannel, JSON.stringify({
+				type: "update",
+				unique: this.email,
+				data: {
+					username: this.username,
+					x: this.x,
+					y: this.y,
+					facing: this.facing,
+					moving: false,
+					action: ""
+				}
+			}));
+		}
+		if(different){
+			client.hset(this.email, temp);
+			this.snapshot = this.snapShot();
+		}else if(movingcheck){
+			this.snapshot = this.snapShot();
+		}
+	}
+
+	tick(io, socket, treeObj, calcObj, map, itemObj, timeDifference, mapObj, 
+		allOnlinePlayers, vendObj, droppedItemObj, levelTable, client, clientPub, playerChannel){
+		if(this.action === "woodcutting"){
+			if(!this.emptySpace()){
+				this.action = "";
+				io.to(socket).emit('Game Message', "Inventory is full");
+			}else{
+				let temp = this.getTiles(map);
+				//update iron when equipment is added, update [] with % reduction gear
+				let loot = treeObj.chopTree(this.email, temp.tilex, temp.tiley, "iron", map, []);
+				if(typeof loot === 'string' || loot instanceof String){
+					this.action = "";
+					io.to(socket).emit('Game Message', loot);
+				}else if(loot !== undefined){
+					this.action = "";
+					let item = itemObj.findItem(loot);
+					this.addItem(item);
+					this.addXP('woodcutting', item.xp, io, socket, levelTable);
+					io.to(socket).emit('Game Message', "You felled a tree and received a : "+item.name);
+				}
+			}
+		}else if(this.action === "fishing"){
+			if(!this.emptySpace()){
+				this.action = "";
+				io.to(socket).emit('Game Message', "Inventory is full");
+			}else{
+				if(!this.currentlyFishing){
+					this.currentlyFishing = true;
+					let timer = Math.floor(Math.random() * 7000)+2000;
+					setTimeout(function(){
+						if(this.action === "fishing"){
+							let fish = calcObj.calcFishingLoot(this.skills.fishing);
+							this.addItem(fish);
+							if(fish.type === "fish"){
+								this.addXP('fishing', fish.xp, io, socket, levelTable);
+							}
+							this.currentlyFishing = false;
+							io.to(socket).emit('Game Message', "Caught: "+fish.name);
+						}else{
+							this.currentlyFishing = false;
+						}
+					}.bind(this), timer);
+				}
+			}
+		}else if(this.moving === true){
+			this.calcMovement(map, timeDifference, mapObj);
+		}
+		this.rerunSnapShot(client, clientPub, playerChannel);
+		return this.calcPacket(allOnlinePlayers, map, vendObj, droppedItemObj, levelTable, client);
 	}
 
 	calcPlayerMap(map){
@@ -492,39 +548,38 @@ module.exports = class Player{
 		return returnObj;
 	}
 
-	calcPacket(activeplayers, map, vendObj){
-		let list = activeplayers.getPlayers();
+	calcPacket(allOnlinePlayers, map, vendObj, droppedItemObj, levelTable, client){
 		let active = [];
-		for(let i = 0, j = list.length; i < j; i++){
-			if(list[i].email !== this.email){
+		for(let i in allOnlinePlayers){
+			if(i !== this.email){
 				let isInHoriRange = false;
 				let isInVertRange = false;
-				if(this.x > list[i].x){
-					if(this.x-list[i].x <= this.horizontaldraw/2){
+				if(this.x > allOnlinePlayers[i].x){
+					if(this.x-allOnlinePlayers[i].x <= this.horizontaldraw/2){
 						isInHoriRange = true;
 					}
 				}else{
-					if(list[i].x-this.x <= this.horizontaldraw/2){
+					if(allOnlinePlayers[i].x-this.x <= this.horizontaldraw/2){
 						isInHoriRange = true;
 					}
 				}
-				if(this.y > list[i].y){
-					if(this.y-list[i].y <= this.verticaldraw/2){
+				if(this.y > allOnlinePlayers[i].y){
+					if(this.y-allOnlinePlayers[i].y <= this.verticaldraw/2){
 						isInVertRange = true;
 					}
 				}else{
-					if(list[i].y-this.y <= this.verticaldraw/2){
+					if(allOnlinePlayers[i].y-this.y <= this.verticaldraw/2){
 						isInVertRange = true;
 					}
 				}
 				if(isInVertRange && isInHoriRange){
 					let temp = {
-						username: list[i].username,
-						x: list[i].x,
-						y: list[i].y,
-						facing: list[i].facing,
-						moving: list[i].moving,
-						action: list[i].action
+						username: allOnlinePlayers[i].username,
+						x: allOnlinePlayers[i].x,
+						y: allOnlinePlayers[i].y,
+						facing: allOnlinePlayers[i].facing,
+						moving: allOnlinePlayers[i].moving,
+						action: allOnlinePlayers[i].action
 					}
 					active.push(temp);
 				}
@@ -535,7 +590,7 @@ module.exports = class Player{
 		if(this.action === "shopping"){
 			vendor.showVendor = true;
 			let temp = this.getTiles(map);
-			let temp2 = vendObj.findVendor(temp.tilex, temp.tiley);
+			let temp2 = vendObj.findVendor(temp.tilex, temp.tiley, client);
 			vendor.vendorItems = temp2.vendor.items;
 		}
 		let banker = {};
@@ -556,9 +611,9 @@ module.exports = class Player{
 				action: this.action,
 				skills: this.skills,
 				xp: this.xp,
-				levelTable: this.levelTable
+				levelTable: levelTable
 			},
-			items: this.droppedItemList,
+			items: droppedItemObj.getItems(this.x, this.y, this.email),
 			enemy:{
 
 			},
@@ -575,7 +630,6 @@ module.exports = class Player{
 	}
 
 	calcMovement(map, timeDifference, mapObj){
-		this.moving = false;
 		//count the number of movement keys pressed
 		let count = Object.values(this.movement).reduce((x,y)=>x+y, 0);
 		let movement;
@@ -626,31 +680,40 @@ module.exports = class Player{
 			}else if(map.layers["layer2"][posy][posx] === 0){
 				this.y-=(this.movespeed*timeDifference);
 				this.moving = true;
+			}else{
+				this.moving = false;
 			}
 		}else if(movement === "NE"){
 			this.facing = "NE";
-			let tele = mapObj.checkdoors(Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference)), Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference)));
+			let northEastX = Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference));
+			let northEastY = Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference));
+			let tele = mapObj.checkdoors(northEastX, northEastY);
 			if(tele !== false){
 				this.teleport(tele.telex, tele.teley);
-			}else if(map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference))] === 0){
+			}else if(map.layers["layer2"][northEastY][northEastX] === 0){
 				this.x+=((this.movespeed/2)*timeDifference);
 				this.y-=((this.movespeed/2)*timeDifference);
 				this.moving = true;
-			}else if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference))] === 0){
+			}else if(map.layers["layer2"][Math.floor(this.y)][northEastX] === 0){
 				this.x+=((this.movespeed/2)*timeDifference);
 				this.moving = true;
-			}else if(map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
+			}else if(map.layers["layer2"][northEastY][Math.floor(this.x)] === 0){
 				this.y-=((this.movespeed/2)*timeDifference);
 				this.moving = true;
+			}else{
+				this.moving = false;
 			}
 		}else if(movement === "E"){
 			this.facing = "E";
-			let tele = mapObj.checkdoors(Math.floor(this.x+(this.charactersize/100)+(this.movespeed*timeDifference)), Math.floor(this.y));
+			let east = Math.floor(this.x+(this.charactersize/100)+(this.movespeed*timeDifference));
+			let tele = mapObj.checkdoors(east, Math.floor(this.y));
 			if(tele !== false){
 				this.teleport(tele.telex, tele.teley);
-			}else if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x+(this.charactersize/100)+(this.movespeed*timeDifference))] === 0){
+			}else if(map.layers["layer2"][Math.floor(this.y)][east] === 0){
 				this.x+=(this.movespeed*timeDifference);
 				this.moving = true;
+			}else{
+				this.moving = false;
 			}
 		}else if(movement === "SE"){
 			this.facing = "SE";
@@ -667,6 +730,8 @@ module.exports = class Player{
 			}else if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
 				this.y+=((this.movespeed/2)*timeDifference);
 				this.moving = true;
+			}else{
+				this.moving = false;
 			}
 		}else if(movement === "S"){
 			this.facing = "S";
@@ -676,6 +741,8 @@ module.exports = class Player{
 			}else if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed*timeDifference))][Math.floor(this.x)] === 0){
 				this.y+=(this.movespeed*timeDifference);
 				this.moving = true;
+			}else{
+				this.moving = false;
 			}
 		}else if(movement === "SW"){
 			this.facing = "SW";
@@ -692,6 +759,8 @@ module.exports = class Player{
 			}else if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
 				this.y+=((this.movespeed/2)*timeDifference);
 				this.moving = true;
+			}else{
+				this.moving = false;
 			}
 		}else if(movement === "W"){
 			this.facing = "W";
@@ -701,6 +770,8 @@ module.exports = class Player{
 			}else if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x-(this.charactersize/100)-(this.movespeed*timeDifference))] === 0){
 				this.x-=(this.movespeed*timeDifference);
 				this.moving = true;
+			}else{
+				this.moving = false;
 			}
 		}else if(movement === "NW"){
 			this.facing = "NW";
@@ -717,6 +788,8 @@ module.exports = class Player{
 			}else if(map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
 				this.y-=((this.movespeed/2)*timeDifference);
 				this.moving = true;
+			}else{
+				this.moving = false;
 			}
 		}
 	}

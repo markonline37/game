@@ -23,58 +23,6 @@
                 31
             ]
         ],
-        "items": [
-            {
-                "type": "fish",
-                "minlevel": "0",
-                "maxlevel": "10",
-                "name": "Brown Trout",
-                "xp": 20,
-                "item": 0,
-                "price": 10,
-                "quantity": 21
-            },
-            {
-                "type": "fish",
-                "minlevel": "15",
-                "maxlevel": "25",
-                "name": "Bass",
-                "xp": 60,
-                "item": 3,
-                "price": 30,
-                "quantity": 82
-            },
-            {
-                "type": "junk",
-                "name": "Branch",
-                "item": 5,
-                "price": 1,
-                "quantity": 3
-            },
-            {
-                "type": "junk",
-                "name": "Old Boot",
-                "item": 6,
-                "price": 2,
-                "quantity": 4
-            },
-            {
-                "type": "junk",
-                "name": "Rusted can",
-                "item": 4,
-                "price": 2,
-                "quantity": 2
-            },
-            {
-                "type": "fish",
-                "minlevel": "10",
-                "maxlevel": "20",
-                "name": "Carp",
-                "xp": 50,
-                "item": 2,
-                "price": 20,
-                "quantity": 12
-            }
-        ]
+        "items": []
     }
 ]

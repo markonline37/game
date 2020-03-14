@@ -305,7 +305,11 @@ function action(){
     let actionToggle = true;
     document.addEventListener('keydown', function(){
         if(event.code === 'KeyE' && actionToggle){
-            socket.emit('action', "KeyE");
+            if(displayShop || displayBanker){
+                socket.emit('stop');
+            }else{
+                socket.emit('action', "KeyE");
+            }
             actionToggle = false;
         }
     });
@@ -391,7 +395,15 @@ function action(){
                 }else{
                     posy = lastPacket.player.y + (e.offsetY - canvas.height/2)/tilesize;
                 }
-                socket.emit('clicked', {x: posx, y: posy});
+                let id;
+                for(let i = 0, j = lastPacket.items.length; i<j; i++){
+                    if(posx >= lastPacket.items[i].x-0.5 && posx <= lastPacket.items[i].x+0.5 &&
+                        posy >= lastPacket.items[i].y-0.5 && posy <= lastPacket.items[i].y+0.5){
+                        socket.emit('clicked', lastPacket.items[i].id);
+                        break;
+                    }
+                }
+                
             }
         }
     });
@@ -474,7 +486,7 @@ function drawScreen(data){
     map = data.map;
     ctx.clearRect(0,0,canvas.width,canvas.height);
     for(let i = 0, j = Object.keys(map).length-1; i<j;i++){
-        drawMap(data.player.x, data.player.y, i);
+        drawMap(data.player.x, data.player.y, i, data.trees);
     }
     for(let i = 0, j = data.active.length; i < j; i++){
         let x = centrehori-(data.player.x-data.active[i].x)*tilesize;
@@ -556,9 +568,9 @@ function drawItems(x, y, input){
     for(let i = 0, j = input.length; i<j; i++){
         let posx;
         let posy;
-        let sx = (input[i].type.item%10)*tilesize;
-        let sy = Math.floor(input[i].type.item/10)*tilesize;
-        if(input[i].type.item%10 !== 0){
+        let sx = (input[i].item%10)*tilesize;
+        let sy = Math.floor(input[i].item/10)*tilesize;
+        if(input[i].item%10 !== 0){
             sx+=1;
             sy+=1;
         }
@@ -576,7 +588,7 @@ function drawItems(x, y, input){
     }
 }
 
-function drawMap(inx, iny, layer){
+function drawMap(inx, iny, layer, trees){
     let county = 0;
     for(let coordy = starty;coordy<endy;coordy+=tilesize){
         let countx = 0;
