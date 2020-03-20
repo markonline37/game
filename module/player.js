@@ -1,4 +1,6 @@
 module.exports = class Player{
+	//user can be new user with default values assigned or an existing user with all inputs supplied.
+	//i.e. gold, facing, xp, skills, inventory, bankedItems are all optional.
 	constructor(username, email, password, socket, x, y, charactersize, movespeed, 
 		horizontaldraw, verticaldraw, gold, facing, xp, skills, inventory, bankedItems){
 		this.username = username;
@@ -97,6 +99,7 @@ module.exports = class Player{
 		this.action = "";
 	}
 
+	//checks the bank to see if user can deposit new item types.
 	bankFreeSpace(){
 		if(this.bankedItems.length >= 60){
 			return false;
@@ -105,6 +108,7 @@ module.exports = class Player{
 		}
 	}
 
+	//removes item from inventory and adds to bank, bank uses quantity of item instead of 1 slot per 1 item.
 	bankDeposit(slot){
 		slot+=1;
 		if(this.bankFreeSpace() && slot >= 1 && slot <= 30){
@@ -131,6 +135,7 @@ module.exports = class Player{
 		}
 	}
 
+	//withdraw item from bank
 	bankWithdraw(slot){
 		if(!this.emptySpace()){
 			return "Inventory is full";
@@ -148,6 +153,7 @@ module.exports = class Player{
 		}
 	}
 
+	//sells an item to vendor
 	sellItem(slot, vendObj, client, clientPub, vendorChannel){
 		if(slot >= 1 && slot <= 30){
 			if(this.action === "shopping"){
@@ -165,6 +171,7 @@ module.exports = class Player{
 		}
 	}
 
+	//buys an item from vendor
 	buyItem(itemNumber, vendObj, allItemsObj, client, clientPub, vendorChannel){
 		if(this.action === "shopping"){
 			if(!this.emptySpace()){
@@ -188,6 +195,7 @@ module.exports = class Player{
 		}
 	}
 
+	//currently unused, additional functionality will use this to change equipment in main hand; axe, river rd, ocean rod, weapon etc.
 	equipMainHand(input){
 		this.equippedMainHand = input;
 	}
@@ -204,6 +212,7 @@ module.exports = class Player{
 		}
 	}
 
+	//swaps an items slot in inventory
 	swapItem(data){
 		let oldslot = data.old;
 		let newslot = data.new;
@@ -214,6 +223,7 @@ module.exports = class Player{
 		}
 	}
 
+	//drop item from inventory
 	dropItem(slot, droppedItemObj){
 		if(this.inventory["slot"+slot] !== "" && slot !== null){
 			let temp = this.inventory["slot"+slot];
@@ -225,6 +235,7 @@ module.exports = class Player{
 		}
 	}
 
+	//adds supplied xp to appropriate skill, also checks for level up.
 	addXP(skill, xp, io, socket, levelTable){
 		//apply xp
 		this.xp[skill]+=xp;
@@ -239,6 +250,7 @@ module.exports = class Player{
 		}
 	}
 
+	//used to verify inventory has empty space
 	emptySpace(){
 		for(let i in this.inventory){
 			if(this.inventory[i] === ""){
@@ -248,6 +260,7 @@ module.exports = class Player{
 		return false;
 	}
 
+	//adds an item to inventory
 	addItem(item){
 		for(let i in this.inventory){
 			if(this.inventory[i] === ""){
@@ -258,6 +271,7 @@ module.exports = class Player{
 		return false;
 	}
 
+	//currently unused - additional functionality required.
 	checkFishingEquipment(){
 		let test = false;
 		if(this.equippedMainHand === "riverRod"){
@@ -274,6 +288,7 @@ module.exports = class Player{
 		}
 	}
 
+	//when the 'E' key is pressed by the client, checks the tiles based on facing direction for what action to perform.
 	actions(map, vendObj, treeObj, client){
 		this.action = "";
 		let temp = this.getTiles(map);
@@ -308,12 +323,13 @@ module.exports = class Player{
 				return true;
 			}
 		}
-
+		//woodcutting
 		else if((tile >= 16 && tile <= 21) || (tile >= 24 && tile <= 29)){
 			this.action = "woodcutting";
 		}
 	}
 
+	//gets the tiles based on which direction client is facing
 	getTiles(map){
 		let tile;
 		let tilex;
@@ -376,6 +392,7 @@ module.exports = class Player{
 		}
 	}
 
+	//used by redis to check if change has occured before writing to database
 	snapShot(){
 		return {
 			x: this.x,
@@ -391,6 +408,7 @@ module.exports = class Player{
 		}
 	}
 
+	//uses snapShot (above) to compare values and write to database if changes have occured
 	rerunSnapShot(client, clientPub, playerChannel){
 		let temp = [];
 		let different = false;
@@ -464,14 +482,14 @@ module.exports = class Player{
 		}
 		if(different){
 			client.hset(this.email, temp);
-			this.snapshot = this.snapShot();
-		}else if(movingcheck){
-			this.snapshot = this.snapShot();
 		}
+		this.snapshot = this.snapShot();
 	}
 
+	//main player processor, performs function based on user action and returns the data packet.
 	tick(io, socket, treeObj, calcObj, map, itemObj, timeDifference, mapObj, 
 		allOnlinePlayers, vendObj, droppedItemObj, levelTable, client, clientPub, playerChannel){
+		//woodcutting
 		if(this.action === "woodcutting"){
 			if(!this.emptySpace()){
 				this.action = "";
@@ -491,7 +509,9 @@ module.exports = class Player{
 					io.to(socket).emit('Game Message', "You felled a tree and received a : "+item.name);
 				}
 			}
-		}else if(this.action === "fishing"){
+		}
+		//fishing
+		else if(this.action === "fishing"){
 			if(!this.emptySpace()){
 				this.action = "";
 				io.to(socket).emit('Game Message', "Inventory is full");
@@ -514,13 +534,18 @@ module.exports = class Player{
 					}.bind(this), timer);
 				}
 			}
-		}else if(this.moving === true){
+		}
+		//moving
+		else if(this.moving === true){
 			this.calcMovement(map, timeDifference, mapObj);
 		}
+		//checks to see if data has changed after tick - writes to database the changes
 		this.rerunSnapShot(client, clientPub, playerChannel);
+		//uses calcpacket functionality to return the data packet to server
 		return this.calcPacket(allOnlinePlayers, map, vendObj, droppedItemObj, levelTable, client);
 	}
 
+	//used by calcpacket to calculate the world map based on view and players coordinates
 	calcPlayerMap(map){
 		let returnObj = {};
 		let xmin = Math.floor(this.x) - this.horizontaldraw/2;
@@ -548,7 +573,9 @@ module.exports = class Player{
 		return returnObj;
 	}
 
+	//calculates the data packet for player (everything that is sent to client)
 	calcPacket(allOnlinePlayers, map, vendObj, droppedItemObj, levelTable, client){
+		//other players in visual range of current player
 		let active = [];
 		for(let i in allOnlinePlayers){
 			if(i !== this.email){
@@ -585,6 +612,7 @@ module.exports = class Player{
 				}
 			}
 		}
+		//vendor & vendor items
 		let vendor = {};
 		vendor.showVendor = false;
 		if(this.action === "shopping"){
@@ -593,12 +621,14 @@ module.exports = class Player{
 			let temp2 = vendObj.findVendor(temp.tilex, temp.tiley, client);
 			vendor.vendorItems = temp2.vendor.items;
 		}
+		//banker & banker items
 		let banker = {};
 		banker.showBanker = false;
 		if(this.action === "banking"){
 			banker.showBanker = true;
 			banker.bankerItems = this.bankedItems;
 		}
+		//current player data
 		let player = {
 			map: this.calcPlayerMap(map),
 			player:{
@@ -624,15 +654,20 @@ module.exports = class Player{
 		return player;
 	}
 
+	//used by calcmovement to teleport user when they walk through doors.
+	//as inside areas are drawn off main map.
 	teleport(x, y){
 		this.x = x+0.5;
 		this.y = y+0.5;
 	}
 
+	//player can move in 8 directions; N, NE, E etc. 
+	//This function calculates where players should be after game tick.
 	calcMovement(map, timeDifference, mapObj){
 		//count the number of movement keys pressed
 		let count = Object.values(this.movement).reduce((x,y)=>x+y, 0);
 		let movement;
+		//checks which direction they should be using based on number of keys pressed
 		//since 3 are pressed and 2 directions cancel each other out, only go 1 direction
 		if(count === 3){
 			if(this.movement.left && this.movement.right){
@@ -649,6 +684,7 @@ module.exports = class Player{
 					movement = "E";
 				}
 			}
+		//2 keys pressed means moving diagonally or cancelled movement.
 		}else if(count === 2){
 			if(this.movement.left && this.movement.up){
 				movement = "NW";
@@ -659,6 +695,7 @@ module.exports = class Player{
 			}else if(this.movement.right && this.movement.down){
 				movement = "SE";
 			}
+		//1 key, 1 direction
 		}else if(count === 1){
 			if(this.movement.left){
 				movement = "W";
@@ -670,6 +707,9 @@ module.exports = class Player{
 				movement = "S";
 			}
 		}
+		//works by checking the x/y of where the user is going to be and checks if it is 0 in the collision layer
+		//anything other than 0 is not walkable.
+		//also uses teleport functionality to check for doors(teleports to inside)
 		if(movement === "N"){
 			this.facing = "N";
 			let posy = Math.floor(this.y-(this.charactersize/100)-(this.movespeed*timeDifference));

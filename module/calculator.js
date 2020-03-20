@@ -4,6 +4,11 @@ module.exports = class Calculator{
 		this.junk = junk;
 	}
 
+	/*
+		Used in player module.
+		Creates an array of possible loot, including junk and fish 
+			(both level dependant) before returning 1 loot.
+	*/
 	calcFishingLoot(skill){
 		let temparr = [];
 		let toggle = true;

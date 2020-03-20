@@ -10,6 +10,7 @@ module.exports = class Vendors{
 		}
 	}
 
+	//load vendors from file
 	loadVendors(){
 		try{
 			return JSON.parse(this.fs.readFileSync(this.vendorfile));
@@ -18,6 +19,7 @@ module.exports = class Vendors{
 		}
 	}
 
+	//load bankers from file
 	loadBankers(){
 		try{
 			return JSON.parse(this.fs.readFileSync(this.bankerfile));
@@ -26,6 +28,7 @@ module.exports = class Vendors{
 		}
 	}
 
+	//uses the supplied x/y and the vendors position (each counter) to determine which vendor
 	findVendor(tilex, tiley, client){
 		for(let i = 0, j = this.vendors.length; i<j; i++){
 			for(let k = 0, l = this.vendors[i].vendorposition.length; k<l; k++){
@@ -51,6 +54,7 @@ module.exports = class Vendors{
 		return false;
 	}
 	
+	//sells item to vendor, publishes result to vendor channel (for scalability)
 	sellItemtoVendor(x, y, item, client, clientPub, vendorChannel, itemsObj){
 		let temp = this.findVendor(x, y, client);
 		let vendorID = null;
@@ -59,12 +63,14 @@ module.exports = class Vendors{
 			let found = false;
 			for(let i = 0, j = this.vendors[vendorID].items.length; i<j; i++){
 				if(item.item === this.vendors[vendorID].items[i].item){
+					//if vendor already has this item, increase quantity
 					this.vendors[vendorID].items[i].quantity++;
 					found = true;
 					break;
 				}
 			}
 			if(!found){
+				//else give quantity 1 and add to vendor items
 				let temp = item;
 				temp.quantity = 1;
 				this.vendors[vendorID].items.push(temp);
@@ -80,11 +86,14 @@ module.exports = class Vendors{
 		}
 	}
 
+	//on publish vendorchannel update vendors items.
+	//currently fine without scalability but will need to update this to use item, quantity+/- 
 	updateVendors(data){
 		let input = JSON.parse(data);
 		this.vendors[input.vendor].items = input.items;
 	}
 
+	//buys an item from vendor, publishes result to vendor channel
 	buyItemFromVendor(x, y, item, client, clientPub, vendorChannel){
 		let temp = this.findVendor(x, y, client);
 		let bought = false;

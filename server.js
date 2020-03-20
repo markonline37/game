@@ -2,13 +2,21 @@
 	todo:
 		Functionality to move to master when cluster is implemented;
 			client.del('allOnlinePlayers')
-			tree.controller - setup pub/sub
-			droppedItems.controller - setup pub/sub
+			trees - setup pub/sub
+			droppedItems - setup pub/sub
 			master maintains a copy of allonlineplayers - function to get all players on worker start
+				master sub AllPlayers ->client pub allPlayers -> master pub allPlayers -> 
+				client sub allPlayersListener, if(not already loaded){ load all players}
+			Restart workers
+				master delete players from allOnlinePlayers for that worker, and pub newAllPlayers
+			Restart Master
+				master sub workerListener -> master pub iAmNewMaster -> client pub workerListener(name of worker)
+
+			***Might be easier/better to use node's cluster communication instead of ioredis pub/sub
 		
 		Finish map
 
-		Add woodcutting animation
+		Update woodcutting animation.
 
 */
 //redis general connection ---------------------------------------------
@@ -53,7 +61,7 @@ clientPlayerSub.on('message', (playerChannel, message) => {
 	}
 });
 
-
+//can use await keyword with hgetallAsync
 const {promisify} = require('util');
 const hgetallAsync = promisify(client.hgetall).bind(client);
 
@@ -80,7 +88,6 @@ const gamespeed = 60;
 //modules
 const fs = require('fs');
 const fssync = require('fs').promises;
-const db = require('./module/db');
 const hasher = require('./module/hash');
 const Player = require('./module/player');
 const Calculator = require('./module/calculator');
@@ -103,7 +110,7 @@ var map, mapObj, itemsObj, calcObj, vendObj, treesObj, droppedItemsObj, levelTab
 	treesObj = await new Trees(map);
 	droppedItemsObj = await new DroppedItem(horizontaldrawdistance/2, verticaldrawdistance/2);
 	try{
-		let temp = fs.readFileSync('./storage/levelTable.json');
+		let temp = fs.readFileSync('./storage/leveltable.json');
 		levelTable = JSON.parse(temp);
 	}catch(err){
 		console.log("error loading levelTable: "+err);
@@ -156,6 +163,7 @@ io.on('connection', function(socket) {
 			}
 			
 			if(!errors){
+				//inserts new client into database
 				client.hmset(data.email.toLowerCase(), {
 					'username': data.username,
 					'email': data.email.toLowerCase(),
@@ -208,6 +216,7 @@ io.on('connection', function(socket) {
 						}),
 					'bankedItems': JSON.stringify([])
 				});
+				//adds a simpler object with only the minimum options to allonlineplayers
 				client.sadd('allOnlinePlayers', data.email.toLowerCase());
 				clientPub.publish(playerChannel, JSON.stringify({
 					type: "update",
@@ -296,6 +305,7 @@ io.on('connection', function(socket) {
 		});	
 	});
 
+	//removes player from appropriate lists so they aren't drawn onscreen and can login again etc.
 	socket.on('disconnect', function(){
 		let player = findPlayer(socket.id);
 		if(player !== false){
@@ -309,6 +319,7 @@ io.on('connection', function(socket) {
 		}	
 	});
 
+	//sets the player movement based on input
 	socket.on('movement', function(data){
 		let player = findPlayer(socket.id);
 		if(player !== false){
@@ -322,6 +333,7 @@ io.on('connection', function(socket) {
 		}
 	});
 
+	//client presses E key
 	socket.on('action', function(data){
 		let player = findPlayer(socket.id);
 		if(player !== false){
@@ -332,6 +344,7 @@ io.on('connection', function(socket) {
 		}
 	});
 
+	//moves an item from inventory to off-inventory, drops item
 	socket.on('drop item', function(data){
 		let player = findPlayer(socket.id);
 		if(player !== false){
@@ -342,6 +355,7 @@ io.on('connection', function(socket) {
 		}
 	});
 
+	//swaps an items slot
 	socket.on('swap item', function(data){
 		let player = findPlayer(socket.id);
 		if(player !== false){
@@ -352,6 +366,7 @@ io.on('connection', function(socket) {
 		}
 	});
 
+	//picks up an item
 	socket.on('clicked', function(data){
 		let player = findPlayer(socket.id);
 		if(player !== false){
@@ -362,6 +377,7 @@ io.on('connection', function(socket) {
 		}
 	});
 
+	//sellItemToVendor
 	socket.on('sell item', function(data){
 		let player = findPlayer(socket.id);
 		if(player !== false){
@@ -372,6 +388,7 @@ io.on('connection', function(socket) {
 		}
 	});
 
+	//buyItemFromVendor
 	socket.on('buy item', function(data){
 		let player = findPlayer(socket.id);
 		if(player !== false){
@@ -382,6 +399,7 @@ io.on('connection', function(socket) {
 		}
 	});
 
+	//Esc/E pressed cancels any action, fishing, woodcutting, banking, shopping etc.
 	socket.on('stop', function(){
 		let player = findPlayer(socket.id);
 		if(player !== false){
@@ -389,6 +407,7 @@ io.on('connection', function(socket) {
 		}
 	});
 
+	//deposit items to bank
 	socket.on('bank deposit', function(data){
 		let player = findPlayer(socket.id);
 		if(player !== false){
@@ -399,6 +418,7 @@ io.on('connection', function(socket) {
 		}
 	});
 
+	//withdraw item from bank
 	socket.on('bank withdraw', function(data){
 		let player = findPlayer(socket.id);
 		if(player !== false){
@@ -414,8 +434,6 @@ let toggle = true;
 //main loop
 let lastUpdateTime = (new Date()).getTime();
 setInterval(function() {
-	treesObj.controller(map);
-	droppedItemsObj.controller();
 	let currentTime = (new Date()).getTime();
 	let timeDifference = currentTime - lastUpdateTime;
 	for(let i in onlinePlayers){
@@ -426,6 +444,7 @@ setInterval(function() {
 	lastUpdateTime = currentTime;
 }, 1000 / gamespeed);
 
+//finds player based on supplied socket.
 function findPlayer(socket){
 	if(socket in onlinePlayers){
 		return onlinePlayers[socket];
@@ -433,6 +452,10 @@ function findPlayer(socket){
 		return false;
 	}
 }
+
+/*
+	below is only used to run commands in the cli; handles exit and processMap
+*/
 
 const readline = require('readline');
 let rl = readline.createInterface(process.stdin, process.stdout);
@@ -448,9 +471,6 @@ let question = function(q){
 		let answer = await question('');
 		let user;
 		switch(answer){
-			case "trees":
-				console.log(treesObj.getTrees());
-				break;
 			case "processMap":
 				mapObj.processMap();
 				map = mapObj.getMap();

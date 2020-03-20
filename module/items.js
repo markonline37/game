@@ -1,4 +1,5 @@
 module.exports = class Items{
+	//list of all items, might want to move this to json file and load it in, in the future.
 	constructor(){
 		this.items = [
 			{
@@ -66,6 +67,7 @@ module.exports = class Items{
 		];
 	}
 
+	//gets items array with type junk.
 	getJunk(){
 		let temp = [];
 		for(let i = 0, j = this.items.length; i<j; i++){
@@ -76,6 +78,7 @@ module.exports = class Items{
 		return temp;
 	}
 
+	//gets items array with type fish
 	getFish(){
 		let temp = [];
 		for(let i = 0, j = this.items.length; i<j; i++){
@@ -86,6 +89,7 @@ module.exports = class Items{
 		return temp;
 	}
 
+	//find a specific item by it's item property (id)
 	findItem(item){
 		for(let i = 0, j = this.items.length; i<j; i++){
 			if(this.items[i].item === item){

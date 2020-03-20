@@ -5,6 +5,7 @@ module.exports = class DroppedItems{
 		this.vertview = vert;
 	}
 
+	//gets an array of dropped loot within visual range of player
 	getItems(x, y, unique){
 		let temparr = [];
 		for(let i = 0, j = this.items.length; i<j; i++){
@@ -23,6 +24,7 @@ module.exports = class DroppedItems{
 		return temparr;
 	}
 
+	//takes a user supplied id and checks that the user is within range and can pick up item, returns item or false.
 	pickupItem(id, x, y, unique){
 		let pickupdist = 5;
 		for(let i = 0, j = this.items.length; i<j; i++){
@@ -61,11 +63,13 @@ module.exports = class DroppedItems{
 		return false;
 	}
 
+	//'drops' a supplied item, creates an object of the dropped item with drop time, coordinates, item etc.
 	dropItem(x, y, item, unique){
 		let id;
 		if(this.items.length === 0){
 			id = 1;
 		}else{
+			//this might need to be updated in the future, currently just increments id. Might run into memory issues.
 			id = this.items[this.items.length-1].id+1;
 		}
 		let temp = {
@@ -78,16 +82,23 @@ module.exports = class DroppedItems{
 			owner: unique
 		}
 		this.items.push(temp);
-	}
 
-	controller(){
-		let timenow = (new Date()).getTime();
-		for(let i = 0, j = this.items.length; i<j; i++){
-			if(timenow-this.items[i].droppedTime > 300000){
-				this.items.splice(i, 1);
-			}else if(timenow-this.items[i].droppedTime > 120000){
-				this.items[i].owner = "";
+		//use a timeout callback to update the item
+		setTimeout(function(){
+			for(let i = 0, j = this.items.length; i<j; i++){
+				if(this.items.id === id){
+					this.items[i].owner = "";
+					break;
+				}
 			}
-		}
+		}.bind(this, id), 120000);
+		setTimeout(function(){
+			for(let i = 0, j = this.items.length; i<j; i++){
+				if(this.items.id === id){
+					this.items.splice(i, 1);
+					break;
+				}
+			}
+		}.bind(this, id), 300000);
 	}
 }

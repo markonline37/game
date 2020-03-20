@@ -1,3 +1,7 @@
+/*
+    clientside js, needs a major overhaul for modularity reasons.
+*/
+
 const tilesize = 32;
 const canvaswidth = 1600;
 const canvasheight = 1200;
@@ -21,6 +25,7 @@ window.onload = function(){
     window.addEventListener("resize", windowResize);
 }
 
+//uses a minimum width and height to work out size of window.
 function windowResize(){
     let container = document.getElementById("row");
     canvas = document.getElementById("canvas");
@@ -85,6 +90,7 @@ function windowResize(){
 
 document.getElementById('new-player-form').addEventListener('submit', newPlayer);
 
+//new player joining server
 function newPlayer(e){
     e.preventDefault();
 
@@ -130,6 +136,7 @@ function newPlayer(e){
 
 document.getElementById('returning-player').addEventListener('submit', returningPlayer);
 
+//existing player joining server
 function returningPlayer(e){
     e.preventDefault();
     
@@ -167,6 +174,7 @@ function validateEmail(email){
     return false;
 }
 
+//errors for failed new user
 socket.on('failed new user', function(error){
     let usernameError = document.getElementById('new-player-name-error');
     let emailError = document.getElementById('new-player-email-error');
@@ -189,6 +197,7 @@ socket.on('failed new user', function(error){
     }
 });
 
+//errors for failed existing user
 socket.on('failed login', function(error){
     var emailError = document.getElementById('returning-player-email-error');
     var passwordError = document.getElementById('returning-player-password-error');
@@ -202,6 +211,7 @@ socket.on('failed login', function(error){
     }
 });
 
+//on successful login, stop showing login form and display client
 socket.on('success', function(){
     document.getElementById('login').style.display = "none";
     canvas = document.getElementById("canvas");
@@ -215,8 +225,8 @@ socket.on('success', function(){
 });
 
 /*
-    uses a toggle for movement etc because it fires constantly
-    without, and this is event based.
+    key pressed events.
+    uses a toggle for movement etc because it fires constantly without, and this is event based.
 */
 let mouseisdown = false;
 let helditem = null;
@@ -335,6 +345,7 @@ function action(){
 
     
     canvas2.addEventListener('mousedown', function(e){
+        //if currently showing shop or showing bank
         if(displayShop || displayBanker){
             if(e.offsetY >=canvas2.height/2 && e.offsetX >= canvas2.width*0.8){
                 //player inventory
@@ -367,6 +378,7 @@ function action(){
                 displayBanker = false;
             }
         }else{
+            //if no shop/bank
             if(e.offsetY <= canvas2.height/2 && e.offsetX >= canvas2.width*0.8){
                 //skill 
             }else if(e.offsetY >=canvas2.height/2 && e.offsetX >= canvas2.width*0.8){
@@ -449,6 +461,9 @@ let timeidle = 0;
 //fishing
 let isfishing = false;
 let timefishing = 0;
+//woodcutting
+let isWoodcutting = false;
+let timewoodcutting = 0;
 let lastPacket;
 
 socket.on('update', function(data){
@@ -472,6 +487,10 @@ socket.on('update', function(data){
         isfishing = false;
         timefishing = 0;
     }
+    if(isWoodcutting === false && data.player.action === "woodcutting"){
+        isWoodcutting = true;
+        timewoodcutting = Date.now();
+    }
     
     arrhori = data.map["layer1"][0].length/2;
     arrvert = data.map["layer1"].length/2;
@@ -482,12 +501,15 @@ socket.on('update', function(data){
 let displayShop = false;
 let displayBanker = false;
 let map;
+//main UI refresh, called by success (above) draws the UI in layers
 function drawScreen(data){
     map = data.map;
     ctx.clearRect(0,0,canvas.width,canvas.height);
+    //draws the map, apart from the 'walk-behind' layer
     for(let i = 0, j = Object.keys(map).length-1; i<j;i++){
         drawMap(data.player.x, data.player.y, i, data.trees);
     }
+    //draws other active users
     for(let i = 0, j = data.active.length; i < j; i++){
         let x = centrehori-(data.player.x-data.active[i].x)*tilesize;
         let y = centrevert-(data.player.y-data.active[i].y)*tilesize;
@@ -497,11 +519,15 @@ function drawScreen(data){
         ctx.textAlign = "center";
         ctx.fillText(data.active[i].username, x, y-tilesize*1.5);
     }
+    //draws dropped items
     if(data.items.length > 0){
         drawItems(data.player.x, data.player.y, data.items);
     }
+    //draws clients player
     drawPlayer(data.player, centrehori, centrevert);
+    //draws the walk-behind layer
     drawMap(data.player.x, data.player.y, Object.keys(map).length-1);
+    //displays shop/bank as appropriate
     if(data.vendor.showVendor){
         displayShop = true;
         drawShop(data.vendor.vendorItems, "Shop");
@@ -514,15 +540,17 @@ function drawScreen(data){
     }else{
         displayBanker = false;
     }
+    //draws the skills/inventory sidepanel
     drawUI(data.player.skills, data.player.xp, data.player.inventory, data.player.levelTable, data.player.gold);
-    //draw enemie(s) position/rotation/action
-    //if error, draw error.
+    //draws the game messages; 'bag is full', 'caught a fish' etc
     if(messageBuffer.length > 0){
         drawGameMessage();
     }
 }
 
+//shopslots is used to work out what item the user clicked (when buying item from vendor)
 let shopSlots = [];
+//displays the shop interface, builds shopSlots and displays each item
 function drawShop(shopItems, title){
     shopSlots = [];
     let border = 10;
@@ -564,6 +592,7 @@ function drawShop(shopItems, title){
     }
 }
 
+//displays any dropped items on ground
 function drawItems(x, y, input){
     for(let i = 0, j = input.length; i<j; i++){
         let posx;
@@ -588,7 +617,8 @@ function drawItems(x, y, input){
     }
 }
 
-function drawMap(inx, iny, layer, trees){
+//draws the map based on layer
+function drawMap(inx, iny, layer){
     let county = 0;
     for(let coordy = starty;coordy<endy;coordy+=tilesize){
         let countx = 0;
@@ -609,6 +639,7 @@ function drawMap(inx, iny, layer, trees){
     }
 }
 
+//pushes messages to buffer with a 4 second pop
 let messageBuffer = [];
 socket.on('Game Message', function(data){
     messageBuffer.push(data);
@@ -627,6 +658,7 @@ function drawGameMessage(){
     }    
 }
 
+//displays the inventory and builds inventory slots which is used to calculate which item is clicked
 let inventorySlots = [];
 function inventoryPosition(){
     inventorySlots = [];
@@ -647,6 +679,7 @@ function inventoryPosition(){
     }
 }
 
+//formats gold into a visually pleasing manor; 1,111,111 becomes 1.1M
 function formatGold(gold){
     gold = gold.toString();
     if(gold.length <= 3){
@@ -714,6 +747,7 @@ function formatGold(gold){
     }
 }
 
+//checks to see if XP/Inventory is different before drawing them - often only the map will update so save resources.
 let storedXp, storedInventory;
 let border = 10;
 function drawUI(skills, xp, inventory, levelTable, gold){
@@ -808,6 +842,7 @@ function drawUI(skills, xp, inventory, levelTable, gold){
     }
 }
 
+//draw player facing and animation; fishing, moving, still etc.
 function drawPlayer(data, x, y){
     if(data.moving){
         let num;
@@ -852,6 +887,19 @@ function drawPlayer(data, x, y){
             }
         }
         
+        ctx.drawImage(char, num1, num2, tilesize*2, tilesize*2, x-(tilesize), y-(tilesize*1.5), tilesize*2, tilesize*2);
+    }else if(data.action === "woodcutting"){
+        let num1 = ((Date.now()-timewoodcutting)%8)*tilesize*2;
+        let num2;
+        if(data.facing === "N"){
+            num2 = 1024;
+        }else if(data.facing === "NE" || data.facing === "E" || data.facing === "SE"){
+            num2 = 1216;
+        }else if(data.facing === "S"){
+            num2 = 1152;
+        }else if(data.facing === "SW" || data.facing === "W" || data.facing === "NW"){
+            num2 = 1088;
+        }
         ctx.drawImage(char, num1, num2, tilesize*2, tilesize*2, x-(tilesize), y-(tilesize*1.5), tilesize*2, tilesize*2);
     }else{
         let num;

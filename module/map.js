@@ -7,12 +7,14 @@ module.exports = class Map{
 		this.fs = fs;
 		this.fssync = fssync;
 		this.map = this.loadMap();
+		//as the map uses an off-main-map area for inside buildings, this is used to 'teleport' the user inside.
 		this.doors = [
 			[[55, 50], [229, 32]],
 			[[69, 48], [264, 33]]
 		]
 	}
 
+	//checks if supplied x/y is a door, if it is returns where to teleport user too/false if not.
 	checkdoors(x, y){
 		let returnvalue;
 		for(let i = 0, j = this.doors.length; i<j; i++){
@@ -35,6 +37,8 @@ module.exports = class Map{
 		}
 	}
 
+	//reads the temp.json map file produced in tiled.exe and processes it to usable by the server.
+	//also backsup old map in case it is to be reverted.
 	processMap(){
 		try{
 			if(this.fs.existsSync(this.directory+this.unprocessedMap)){
@@ -80,6 +84,7 @@ module.exports = class Map{
 		}
 	}
 
+	//used by processMap
 	convertMap(input, n){
 		let newMap = [];
 		let j = Math.sqrt(input.layers[n].data.length);
@@ -95,6 +100,7 @@ module.exports = class Map{
 		return newMap;
 	}
 
+	//initial load of map into object.
 	loadMap(){
 		try{
 			let temp = this.fs.readFileSync(this.directory+this.mapfile);
