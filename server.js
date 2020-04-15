@@ -97,10 +97,22 @@ const Vendors = require('./module/vendors.js');
 const Trees = require('./module/trees');
 const DroppedItem = require('./module/droppedItems.js')
 
+//main testing boolean.
+const testingEnabled = true;
+let testNames = [];
+let testAccountCount = 0;
+
 //objects
 var map, mapObj, itemsObj, calcObj, vendObj, treesObj, droppedItemsObj, levelTable;
 
 (async () => {
+	if(testingEnabled){
+		try{
+			testNames = await JSON.parse(fs.readFileSync('./storage/testNames.json'));
+		}catch(err){
+			console.log(err);
+		}
+	}
 	mapObj = await new Mapp(fs, fssync);
 	map = await mapObj.getMap();
 	itemsObj = await new Items();
@@ -135,6 +147,36 @@ var onlinePlayers = {};
 var allOnlinePlayers = {};
 
 io.on('connection', function(socket) {
+	//for Artillery.IO testing only.
+	socket.on('new player testing', function(data){
+		if(testingEnabled){
+			let testEmail = testAccountCount+"@madeupemail.com";
+			let testUsername = testNames[Math.floor(Math.random() * testNames.length)]+testAccountCount;
+			let testPassword = "abcd1234";
+			client.sadd('allOnlinePlayers', testEmail);
+			clientPub.publish(playerChannel, JSON.stringify({
+				type: "update",
+				unique: testEmail,
+				data: {
+					username: testUsername,
+					x: startPosX,
+					y: startPosY,
+					facing: "S",
+					moving: false,
+					action: ""
+				}
+			}));
+			let player = new Player(testUsername, testEmail, hasher.hash(testPassword), socket, startPosX, startPosY, 
+				charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance);
+			onlinePlayers[socket.id] = player;
+			io.to(socket.id).emit('success');
+			console.log('Test account Joined: '+testEmail+', '+testUsername);
+			console.log("Number of active users: "+onlinePlayers.length);
+			testAccountCount++;
+		}else{
+			io.to(socket.id).emit('failed new user', {username: "Account List Full", email: false, password: false});
+		}
+	});
 	//new player-------------------------------------------------------------------------
 	socket.on('new player', function(data) {
 		client.exists(data.email.toLowerCase(), function(err, reply){
@@ -433,15 +475,22 @@ io.on('connection', function(socket) {
 let toggle = true;
 //main loop
 let lastUpdateTime = (new Date()).getTime();
+let gameLoopRunning = false;
 setInterval(function() {
-	let currentTime = (new Date()).getTime();
-	let timeDifference = currentTime - lastUpdateTime;
-	for(let i in onlinePlayers){
-		let packet = onlinePlayers[i].tick(io, i, treesObj, calcObj, map, itemsObj, timeDifference, 
-			mapObj, allOnlinePlayers, vendObj, droppedItemsObj, levelTable, client, clientPub, playerChannel);
-		io.to(i).emit('update', packet);
+	if(!gameLoopRunning){
+		gameLoopRunning = true;
+		(async() => {
+			let currentTime = (new Date()).getTime();
+			let timeDifference = currentTime - lastUpdateTime;
+			for(let i in onlinePlayers){
+				let packet = onlinePlayers[i].tick(io, i, treesObj, calcObj, map, itemsObj, timeDifference, 
+					mapObj, allOnlinePlayers, vendObj, droppedItemsObj, levelTable, client, clientPub, playerChannel);
+				io.to(i).emit('update', packet);
+			}
+			lastUpdateTime = currentTime;
+			gameLoopRunning = false;
+		})();
 	}
-	lastUpdateTime = currentTime;
 }, 1000 / gamespeed);
 
 //finds player based on supplied socket.
@@ -477,6 +526,11 @@ let question = function(q){
 				break;
 			case "q":
 			case "exit":
+				if(testingEnabled){
+					for(let i = 0; i<testAccountCount+1; i++){
+						client.del(i+"@madeupemail.com");
+					}
+				}
 				console.log("exiting...");	
 				process.exit();
 				break;
