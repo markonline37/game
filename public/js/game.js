@@ -20,6 +20,8 @@ itemImg.src = "/image/items.png";
 var skillIcons = new Image();
 skillIcons.src = "/image/skillicons.png";
 
+var map;
+
 window.onload = function(){
     windowResize();
     window.addEventListener("resize", windowResize);
@@ -212,7 +214,8 @@ socket.on('failed login', function(error){
 });
 
 //on successful login, stop showing login form and display client
-socket.on('success', function(){
+socket.on('success', function(data){
+    map = data;
     document.getElementById('login').style.display = "none";
     canvas = document.getElementById("canvas");
     canvas2 = document.getElementById("canvas2");
@@ -450,7 +453,7 @@ function action(){
     });
 }
 
-let canvas, canvas2, ctx, ctx2, arrhori, arrvert, centrehori, centrevert, horiviewdist, vertviewdist, startx, endx, starty, endy;
+let canvas, canvas2, ctx, ctx2, centrehori, centrevert, horiviewdist, vertviewdist, startx, endx, starty, endy;
 
 //log data
 let toggle = true;
@@ -491,23 +494,18 @@ socket.on('update', function(data){
         isWoodcutting = true;
         timewoodcutting = Date.now();
     }
-    
-    arrhori = data.map["layer1"][0].length/2;
-    arrvert = data.map["layer1"].length/2;
 
     drawScreen(data);
 });
 
 let displayShop = false;
 let displayBanker = false;
-let map;
 //main UI refresh, called by success (above) draws the UI in layers
 function drawScreen(data){
-    map = data.map;
     ctx.clearRect(0,0,canvas.width,canvas.height);
     //draws the map, apart from the 'walk-behind' layer
-    for(let i = 0, j = Object.keys(map).length-1; i<j;i++){
-        drawMap(data.player.x, data.player.y, i, data.trees);
+    for(let i = 0, j = map.layers.length-1; i<j;i++){
+        drawMap(data.player.x, data.player.y, i, data.horizontaldraw, data.verticaldraw);
     }
     //draws other active users
     for(let i = 0, j = data.active.length; i < j; i++){
@@ -526,7 +524,7 @@ function drawScreen(data){
     //draws clients player
     drawPlayer(data.player, centrehori, centrevert);
     //draws the walk-behind layer
-    drawMap(data.player.x, data.player.y, Object.keys(map).length-1);
+    drawMap(data.player.x, data.player.y, map.layers.length-1, data.horizontaldraw, data.verticaldraw);
     //displays shop/bank as appropriate
     if(data.vendor.showVendor){
         displayShop = true;
@@ -545,6 +543,28 @@ function drawScreen(data){
     //draws the game messages; 'bag is full', 'caught a fish' etc
     if(messageBuffer.length > 0){
         drawGameMessage();
+    }
+}
+
+//draws the map based on layer
+function drawMap(inx, iny, layer, hori, vert){
+    let county = 0;
+    for(let coordy = starty;coordy<endy;coordy+=tilesize){
+        let countx = 0;
+        for(let coordx = startx;coordx<endx;coordx+=tilesize){
+            let y = Math.floor(iny)-vertviewdist+county;
+            let x = Math.floor(inx)-horiviewdist+countx;
+            let temp = map.layers[layer][y][x];
+            if(temp !== 0){
+                let sourcex = ((temp-1)%8)*32;
+                let sourcey = (Math.floor((temp-1)/8))*32;
+                let posx = coordx+(Math.floor(inx)-inx)*tilesize;
+                let posy = coordy+(Math.floor(iny)-iny)*tilesize;
+                ctx.drawImage(worldTiles, sourcex, sourcey, tilesize, tilesize, Math.round(posx), Math.round(posy), tilesize, tilesize);
+            }
+            countx++;
+        }
+        county++;
     }
 }
 
@@ -614,28 +634,6 @@ function drawItems(x, y, input){
             posy = canvas.height/2+(input[i].y-y)*tilesize;
         }
         ctx.drawImage(itemImg, sx, sy, tilesize, tilesize, posx-tilesize/2, posy-tilesize/2, tilesize, tilesize);
-    }
-}
-
-//draws the map based on layer
-function drawMap(inx, iny, layer){
-    let county = 0;
-    for(let coordy = starty;coordy<endy;coordy+=tilesize){
-        let countx = 0;
-        for(let coordx = startx;coordx<endx;coordx+=tilesize){
-            let y = arrvert-vertviewdist+county;
-            let x = arrhori-horiviewdist+countx;
-            let temp = map[Object.keys(map)[layer]][y][x];
-            if(temp !== 0){
-                let sourcex = ((temp-1)%8)*32;
-                let sourcey = (Math.floor((temp-1)/8))*32;
-                let posx = coordx+(Math.floor(inx)-inx)*tilesize;
-                let posy = coordy+(Math.floor(iny)-iny)*tilesize;
-                ctx.drawImage(worldTiles, sourcex, sourcey, tilesize, tilesize, Math.round(posx), Math.round(posy), tilesize, tilesize);
-            }
-            countx++;
-        }
-        county++;
     }
 }
 

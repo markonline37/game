@@ -16,7 +16,7 @@ config:
       - { up: false, down: true, left: false, right: true }
       - { up: false, down: false, left: true, right: true }
   phases:
-    - duration: 18
+    - duration: 1000
       arrivalRate: 1
 scenarios:
   - engine: "socketio"
@@ -25,12 +25,24 @@ scenarios:
           channel: "new player testing"
           data: ""
       - think: 5
+      - emit:
+          channel: "movement"
+          data: { up: false, down: true, left: false, right: true }
+      - think: 2
       - loop:
         - emit:
             channel: "movement"
-            data: "{{ movement }}"
-        - think: 2
+            data: { up: false, down: false, left: false, right: true }
+        - think: 1
         - emit: 
             channel: "movement"
-            data: "{ up: false, down: false, left: false, right: false }"
-        - think: 2
+            data: { up: false, down: true, left: false, right: false }
+        - think: 1
+        - emit: 
+            channel: "movement"
+            data: { up: false, down: false, left: true, right: false }
+        - think: 1
+        - emit: 
+            channel: "movement"
+            data: { up: true, down: false, left: false, right: false }
+        - think: 1

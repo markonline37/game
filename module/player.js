@@ -14,7 +14,6 @@ module.exports = class Player{
 		}
 		this.x = x;
 		this.y = y;
-		this.moving = false;
 		this.horizontaldraw = horizontaldraw;
 		this.verticaldraw = verticaldraw;
 		this.charactersize = charactersize;
@@ -97,6 +96,10 @@ module.exports = class Player{
 
 	stop(){
 		this.action = "";
+	}
+
+	getEmail(){
+		return this.email;
 	}
 
 	//checks the bank to see if user can deposit new item types.
@@ -338,49 +341,49 @@ module.exports = class Player{
 		let usery = Math.floor(this.y);
 		if(this.facing === "N"){
 			if(map !== undefined){
-				tile = map.layers["layer2"][usery-1][userx];
+				tile = map.layers[3][usery-1][userx];
 			}
 			tilex = Math.floor(this.x);
 			tiley = Math.floor(this.y)-1;
 		}else if(this.facing === "NE"){
 			if(map !== undefined){
-				tile = map.layers["layer2"][usery-1][userx+1];
+				tile = map.layers[3][usery-1][userx+1];
 			}
 			tilex = Math.floor(this.x)+1;
 			tiley = Math.floor(this.y)-1;
 		}else if(this.facing === "E"){
 			if(map !== undefined){
-				tile = map.layers["layer2"][usery][userx+1];
+				tile = map.layers[3][usery][userx+1];
 			}
 			tilex = Math.floor(this.x)+1;
 			tiley = Math.floor(this.y);
 		}else if(this.facing === "SE"){
 			if(map !== undefined){
-				tile = map.layers["layer2"][usery+1][userx+1];
+				tile = map.layers[3][usery+1][userx+1];
 			}
 			tilex = Math.floor(this.x)+1;
 			tiley = Math.floor(this.y)+1;
 		}else if(this.facing === "S"){
 			if(map !== undefined){
-				tile = map.layers["layer2"][usery+1][userx];
+				tile = map.layers[3][usery+1][userx];
 			}
 			tilex = Math.floor(this.x);
 			tiley = Math.floor(this.y)+1;
 		}else if(this.facing === "SW"){
 			if(map !== undefined){
-				tile = map.layers["layer2"][usery-1][userx-1];
+				tile = map.layers[3][usery-1][userx-1];
 			}
 			tilex = Math.floor(this.x)-1;
 			tiley = Math.floor(this.y)+1;
 		}else if(this.facing === "W"){
 			if(map !== undefined){
-				tile = map.layers["layer2"][usery][userx-1];				
+				tile = map.layers[3][usery][userx-1];				
 			}
 			tilex = Math.floor(this.x)-1;
 			tiley = Math.floor(this.y);
 		}else if(this.facing === "NW"){
 			if(map !== undefined){
-				tile = map.layers["layer2"][usery-1][userx-1];
+				tile = map.layers[3][usery-1][userx-1];
 			}
 			tilex = Math.floor(this.x)-1;
 			tiley = Math.floor(this.y)-1;
@@ -403,8 +406,7 @@ module.exports = class Player{
 			skills: JSON.stringify(this.skills),
 			inventory: JSON.stringify(this.inventory),
 			bankedItems: JSON.stringify(this.bankedItems),
-			action: this.action,
-			moving: this.moving
+			action: this.action
 		}
 	}
 
@@ -416,7 +418,6 @@ module.exports = class Player{
 		let ycheck = false;
 		let facingcheck = false;
 		let actioncheck = false;
-		let movingcheck = false;
 		if(this.x !== this.snapshot.x){
 			temp.push('x');
 			temp.push(this.x);
@@ -439,9 +440,6 @@ module.exports = class Player{
 			temp.push(this.facing);
 			different = true;
 			facingcheck = true;
-		}
-		if(this.moving !== this.snapshot.moving){
-			movingcheck = true;
 		}
 		if(this.action !== this.snapshot.action){
 			actioncheck = true;
@@ -466,7 +464,7 @@ module.exports = class Player{
 			temp.push(JSON.stringify(this.bankedItems));
 			different = true;
 		}
-		if(xcheck || ycheck || facingcheck || actioncheck || movingcheck){
+		if(xcheck || ycheck || facingcheck || actioncheck){
 			clientPub.publish(playerChannel, JSON.stringify({
 				type: "update",
 				unique: this.email,
@@ -481,7 +479,9 @@ module.exports = class Player{
 			}));
 		}
 		if(different){
-			client.hset(this.email, temp);
+			(async()=>{
+				client.hset(this.email, temp);
+			})();
 		}
 		this.snapshot = this.snapShot();
 	}
@@ -489,6 +489,7 @@ module.exports = class Player{
 	//main player processor, performs function based on user action and returns the data packet.
 	tick(io, socket, treeObj, calcObj, map, itemObj, timeDifference, mapObj, 
 		allOnlinePlayers, vendObj, droppedItemObj, levelTable, client, clientPub, playerChannel){
+		let time = Date.now();
 		//woodcutting
 		if(this.action === "woodcutting"){
 			if(!this.emptySpace()){
@@ -536,17 +537,33 @@ module.exports = class Player{
 			}
 		}
 		//moving
-		else if(this.moving === true){
+		else if(this.action === "moving"){
 			this.calcMovement(map, timeDifference, mapObj);
 		}
+		let time2 = Date.now() - time;
+		if(this.email === "markonline37@gmail.com"){
+			//console.log("Process 1 (actions), elapsed time: "+time2);
+		}
+		let time3 = Date.now();
 		//checks to see if data has changed after tick - writes to database the changes
 		this.rerunSnapShot(client, clientPub, playerChannel);
+		let time4 = Date.now() - time3;
+		if(this.email === "markonline37@gmail.com"){
+			//console.log("Process 2 (snapshot), elapsed time: "+time4);
+		}
 		//uses calcpacket functionality to return the data packet to server
-		return this.calcPacket(allOnlinePlayers, map, vendObj, droppedItemObj, levelTable, client);
+		let temp = this.calcPacket(allOnlinePlayers, map, vendObj, droppedItemObj, levelTable, client);
+		let time5 = Date.now() - time;
+		if(this.email === "markonline37@gmail.com"){
+			//console.log("Process 6 (packet complete), elapsed time: "+time5);
+		}
+		return temp;
 	}
 
+	/*
 	//used by calcpacket to calculate the world map based on view and players coordinates
 	calcPlayerMap(map){
+		let time1 = Date.now();
 		let returnObj = {};
 		let xmin = Math.floor(this.x) - this.horizontaldraw/2;
 		let xmax = Math.floor(this.x) + this.horizontaldraw/2;
@@ -570,13 +587,19 @@ module.exports = class Player{
 			}
 			returnObj[maparr[l]] = calcarr;
 		}
+		let time2 = Date.now()-time1;
+		if(this.email === "markonline37@gmail.com"){
+			//console.log("Process 5 (player map), elapsed time: "+time2);
+		}
 		return returnObj;
 	}
+	*/
 
 	//calculates the data packet for player (everything that is sent to client)
 	calcPacket(allOnlinePlayers, map, vendObj, droppedItemObj, levelTable, client){
 		//other players in visual range of current player
 		let active = [];
+		let time1 = Date.now();
 		for(let i in allOnlinePlayers){
 			if(i !== this.email){
 				let isInHoriRange = false;
@@ -612,6 +635,11 @@ module.exports = class Player{
 				}
 			}
 		}
+		let time2 = Date.now() - time1;
+		if(this.email === "markonline37@gmail.com"){
+			//console.log("Process 3 (other players), elapsed time: "+time2);
+		}
+		let time3 = Date.now();
 		//vendor & vendor items
 		let vendor = {};
 		vendor.showVendor = false;
@@ -628,20 +656,29 @@ module.exports = class Player{
 			banker.showBanker = true;
 			banker.bankerItems = this.bankedItems;
 		}
+		let time4 = Date.now()-time3;
+		if(this.email === "markonline37@gmail.com"){
+			//console.log("Process 4 (vendors and bankers), elapsed time: "+time4);
+		}
+		let ismoving = false;
+		if(this.action === "moving"){
+			ismoving = true;
+		}
 		//current player data
 		let player = {
-			map: this.calcPlayerMap(map),
 			player:{
 				x: this.x,
 				y: this.y,
 				inventory: this.inventory,
 				gold: this.gold,
-				moving: this.moving,
+				moving: ismoving,
 				facing: this.facing,
 				action: this.action,
 				skills: this.skills,
 				xp: this.xp,
-				levelTable: levelTable
+				levelTable: levelTable,
+				horizontaldraw: this.horizontaldraw,
+				verticaldraw: this.verticaldraw
 			},
 			items: droppedItemObj.getItems(this.x, this.y, this.email),
 			enemy:{
@@ -717,11 +754,11 @@ module.exports = class Player{
 			let tele = mapObj.checkdoors(posx, posy);
 			if(tele !== false){
 				this.teleport(tele.telex, tele.teley);
-			}else if(map.layers["layer2"][posy][posx] === 0){
+			}else if(map.layers[3][posy][posx] === 0){
 				this.y-=(this.movespeed*timeDifference);
-				this.moving = true;
+				this.action = "moving"
 			}else{
-				this.moving = false;
+				this.action = "";
 			}
 		}else if(movement === "NE"){
 			this.facing = "NE";
@@ -730,18 +767,18 @@ module.exports = class Player{
 			let tele = mapObj.checkdoors(northEastX, northEastY);
 			if(tele !== false){
 				this.teleport(tele.telex, tele.teley);
-			}else if(map.layers["layer2"][northEastY][northEastX] === 0){
+			}else if(map.layers[3][northEastY][northEastX] === 0){
 				this.x+=((this.movespeed/2)*timeDifference);
 				this.y-=((this.movespeed/2)*timeDifference);
-				this.moving = true;
-			}else if(map.layers["layer2"][Math.floor(this.y)][northEastX] === 0){
+				this.action = "moving"
+			}else if(map.layers[3][Math.floor(this.y)][northEastX] === 0){
 				this.x+=((this.movespeed/2)*timeDifference);
-				this.moving = true;
-			}else if(map.layers["layer2"][northEastY][Math.floor(this.x)] === 0){
+				this.action = "moving"
+			}else if(map.layers[3][northEastY][Math.floor(this.x)] === 0){
 				this.y-=((this.movespeed/2)*timeDifference);
-				this.moving = true;
+				this.action = "moving"
 			}else{
-				this.moving = false;
+				this.action = ""
 			}
 		}else if(movement === "E"){
 			this.facing = "E";
@@ -749,87 +786,87 @@ module.exports = class Player{
 			let tele = mapObj.checkdoors(east, Math.floor(this.y));
 			if(tele !== false){
 				this.teleport(tele.telex, tele.teley);
-			}else if(map.layers["layer2"][Math.floor(this.y)][east] === 0){
+			}else if(map.layers[3][Math.floor(this.y)][east] === 0){
 				this.x+=(this.movespeed*timeDifference);
-				this.moving = true;
+				this.action = "moving"
 			}else{
-				this.moving = false;
+				this.action = ""
 			}
 		}else if(movement === "SE"){
 			this.facing = "SE";
 			let tele = mapObj.checkdoors(Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference)), Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference)));
 			if(tele !== false){
 				this.teleport(tele.telex, tele.teley);
-			}else if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference))] === 0){
+			}else if(map.layers[3][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference))] === 0){
 				this.x+=((this.movespeed/2)*timeDifference);
 				this.y+=((this.movespeed/2)*timeDifference);
-				this.moving = true;
-			}else if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference))] === 0){
+				this.action = "moving"
+			}else if(map.layers[3][Math.floor(this.y)][Math.floor(this.x+(this.charactersize/100)+(this.movespeed/2*timeDifference))] === 0){
 				this.x+=((this.movespeed/2)*timeDifference);
-				this.moving = true;
-			}else if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
+				this.action = "moving"
+			}else if(map.layers[3][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
 				this.y+=((this.movespeed/2)*timeDifference);
-				this.moving = true;
+				this.action = "moving"
 			}else{
-				this.moving = false;
+				this.action = ""
 			}
 		}else if(movement === "S"){
 			this.facing = "S";
 			let tele = mapObj.checkdoors(Math.floor(this.x), Math.floor(this.y+(this.charactersize/100)+(this.movespeed*timeDifference)));
 			if(tele !== false){
 				this.teleport(tele.telex, tele.teley);
-			}else if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed*timeDifference))][Math.floor(this.x)] === 0){
+			}else if(map.layers[3][Math.floor(this.y+(this.charactersize/100)+(this.movespeed*timeDifference))][Math.floor(this.x)] === 0){
 				this.y+=(this.movespeed*timeDifference);
-				this.moving = true;
+				this.action = "moving"
 			}else{
-				this.moving = false;
+				this.action = ""
 			}
 		}else if(movement === "SW"){
 			this.facing = "SW";
 			let tele = mapObj.checkdoors(Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference)), Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference)));
 			if(tele !== false){
 				this.teleport(tele.telex, tele.teley);
-			}else if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference))] === 0){
+			}else if(map.layers[3][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference))] === 0){
 				this.x-=((this.movespeed/2)*timeDifference);
 				this.y+=((this.movespeed/2)*timeDifference);
-				this.moving = true;
-			}else if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference))] === 0){
+				this.action = "moving"
+			}else if(map.layers[3][Math.floor(this.y)][Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference))] === 0){
 				this.x-=((this.movespeed/2)*timeDifference);
-				this.moving = true;
-			}else if(map.layers["layer2"][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
+				this.action = "moving"
+			}else if(map.layers[3][Math.floor(this.y+(this.charactersize/100)+(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
 				this.y+=((this.movespeed/2)*timeDifference);
-				this.moving = true;
+				this.action = "moving"
 			}else{
-				this.moving = false;
+				this.action = ""
 			}
 		}else if(movement === "W"){
 			this.facing = "W";
 			let tele = mapObj.checkdoors(Math.floor(this.x-(this.charactersize/100)-(this.movespeed*timeDifference)), Math.floor(this.y));
 			if(tele !== false){
 				this.teleport(tele.telex, tele.teley);
-			}else if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x-(this.charactersize/100)-(this.movespeed*timeDifference))] === 0){
+			}else if(map.layers[3][Math.floor(this.y)][Math.floor(this.x-(this.charactersize/100)-(this.movespeed*timeDifference))] === 0){
 				this.x-=(this.movespeed*timeDifference);
-				this.moving = true;
+				this.action = "moving"
 			}else{
-				this.moving = false;
+				this.action = ""
 			}
 		}else if(movement === "NW"){
 			this.facing = "NW";
 			let tele = mapObj.checkdoors(Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference)), Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference)));
 			if(tele !== false){
 				this.teleport(tele.telex, tele.teley);
-			}else if(map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference))] === 0){
+			}else if(map.layers[3][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference))] === 0){
 				this.x-=((this.movespeed/2)*timeDifference);
 				this.y-=((this.movespeed/2)*timeDifference);
-				this.moving = true;
-			}else if(map.layers["layer2"][Math.floor(this.y)][Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference))] === 0){
+				this.action = "moving"
+			}else if(map.layers[3][Math.floor(this.y)][Math.floor(this.x-(this.charactersize/100)-(this.movespeed/2*timeDifference))] === 0){
 				this.x-=((this.movespeed/2)*timeDifference);
-				this.moving = true;
-			}else if(map.layers["layer2"][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
+				this.action = "moving"
+			}else if(map.layers[3][Math.floor(this.y-(this.charactersize/100)-(this.movespeed/2*timeDifference))][Math.floor(this.x)] === 0){
 				this.y-=((this.movespeed/2)*timeDifference);
-				this.moving = true;
+				this.action = "moving"
 			}else{
-				this.moving = false;
+				this.action = ""
 			}
 		}
 	}

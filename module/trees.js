@@ -62,14 +62,14 @@ module.exports = class Trees{
 	killTree(x, y, map, type, found){
 		let timer;
 		if(type == "standard"){
-			map.layers["layer2"][y][x] = 25;
-			map.layers["layer2"][y][x+1] = 26;
+			map.layers[3][y][x] = 25;
+			map.layers[3][y][x+1] = 26;
 			timer = 60000;
 		}
-		map.layers["layer4"][y-1][x] = 0;
-		map.layers["layer4"][y-1][x+1] = 0;
-		map.layers["layer4"][y][x] = 0;
-		map.layers["layer4"][y][x+1] = 0;
+		map.layers[5][y-1][x] = 0;
+		map.layers[5][y-1][x+1] = 0;
+		map.layers[5][y][x] = 0;
+		map.layers[5][y][x+1] = 0;
 
 		setTimeout(function(){
 			this.resetTree(found, type, map, this.trees[found]);
@@ -80,12 +80,12 @@ module.exports = class Trees{
 	resetTree(i, type, map, tree){
 		if(type = "standard"){
 			this.trees[i].health = this.genHealth(type);
-			map.layers["layer2"][tree.starty][tree.startx] = 17;
-			map.layers["layer2"][tree.starty][tree.endx] = 18;
-			map.layers["layer4"][tree.starty][tree.startx] = 33;
-			map.layers["layer4"][tree.starty][tree.endx] = 34;
-			map.layers["layer4"][tree.endy][tree.startx] = 9;
-			map.layers["layer4"][tree.endy][tree.endx] = 10;
+			map.layers[3][tree.starty][tree.startx] = 17;
+			map.layers[3][tree.starty][tree.endx] = 18;
+			map.layers[5][tree.starty][tree.startx] = 33;
+			map.layers[5][tree.starty][tree.endx] = 34;
+			map.layers[5][tree.endy][tree.startx] = 9;
+			map.layers[5][tree.endy][tree.endx] = 10;
 		}
 		this.trees[i].felledTime = "";
 		this.trees[i].beingCutBy = "";
@@ -102,9 +102,9 @@ module.exports = class Trees{
 	//checks the map for certain tiles, and generates a tree array
 	loadTrees(map){
 		let temparr = [];
-		for(let i = 0, j = map.layers["layer2"].length; i<j; i++){
-			for(let k = 0, l = map.layers["layer2"][i].length; k<l; k++){
-				let temp = map.layers["layer2"][i][k];
+		for(let i = 0, j = map.layers[3].length; i<j; i++){
+			for(let k = 0, l = map.layers[3][i].length; k<l; k++){
+				let temp = map.layers[3][i][k];
 				if(temp === 17){
 					let tree ={
 						type: "standard",

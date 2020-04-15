@@ -48,14 +48,14 @@ module.exports = class Map{
 					height: tempData.height,
 					width: tempData.width,
 					tilesize: tempData.tilewidth,
-					layers: {
-						"layer0": this.convertMap(tempData, 0),
-						"layer00": this.convertMap(tempData, 1),
-						"layer1": this.convertMap(tempData, 2),
-						"layer2": this.convertMap(tempData, 3),
-						"layer3": this.convertMap(tempData, 4),
-						"layer4": this.convertMap(tempData, 5)
-					}
+					layers: [
+						this.convertMap(tempData, 0),
+						this.convertMap(tempData, 1),
+						this.convertMap(tempData, 2),
+						this.convertMap(tempData, 3),
+						this.convertMap(tempData, 4),
+						this.convertMap(tempData, 5)
+					]
 				}
 
 				//move old map, write new map to file, delete temp

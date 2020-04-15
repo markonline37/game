@@ -169,9 +169,9 @@ io.on('connection', function(socket) {
 			let player = new Player(testUsername, testEmail, hasher.hash(testPassword), socket, startPosX, startPosY, 
 				charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance);
 			onlinePlayers[socket.id] = player;
-			io.to(socket.id).emit('success');
+			io.to(socket.id).emit('success', map);
 			console.log('Test account Joined: '+testEmail+', '+testUsername);
-			console.log("Number of active users: "+onlinePlayers.length);
+			console.log("Number of active users: "+Object.keys(onlinePlayers).length);
 			testAccountCount++;
 		}else{
 			io.to(socket.id).emit('failed new user', {username: "Account List Full", email: false, password: false});
@@ -275,7 +275,7 @@ io.on('connection', function(socket) {
 				let player = new Player(data.username, data.email, hasher.hash(data.password), socket, startPosX, startPosY, 
 					charactersize, movespeed, horizontaldrawdistance, verticaldrawdistance);
 				onlinePlayers[socket.id] = player;
-				io.to(socket.id).emit('success');
+				io.to(socket.id).emit('success', map);
 				console.log('Player Joined: '+data.email.toLowerCase());
 			} else {
 				io.to(socket.id).emit('failed new user', error);
@@ -337,7 +337,7 @@ io.on('connection', function(socket) {
 								}
 							}));
 							console.log('Player Joined: '+data.email.toLowerCase());
-							io.to(socket.id).emit('success');
+							io.to(socket.id).emit('success', map);
 						});
 					}else{
 						io.to(socket.id).emit('failed login', error);
@@ -367,10 +367,9 @@ io.on('connection', function(socket) {
 		if(player !== false){
 			player.movement = data;
 			if(data.left === true || data.right === true || data.up === true || data.down === true){
-				player.moving = true;
-				player.action = "";
+				player.action = "moving";
 			}else{
-				player.moving = false;
+				player.action = "";
 			}
 		}
 	});
@@ -480,15 +479,20 @@ setInterval(function() {
 	if(!gameLoopRunning){
 		gameLoopRunning = true;
 		(async() => {
+			let time = Date.now();
 			let currentTime = (new Date()).getTime();
 			let timeDifference = currentTime - lastUpdateTime;
 			for(let i in onlinePlayers){
-				let packet = onlinePlayers[i].tick(io, i, treesObj, calcObj, map, itemsObj, timeDifference, 
-					mapObj, allOnlinePlayers, vendObj, droppedItemsObj, levelTable, client, clientPub, playerChannel);
-				io.to(i).emit('update', packet);
+				//if(onlinePlayers[i].action !== ""){
+					let packet = onlinePlayers[i].tick(io, i, treesObj, calcObj, map, itemsObj, timeDifference, 
+						mapObj, allOnlinePlayers, vendObj, droppedItemsObj, levelTable, client, clientPub, playerChannel);
+					io.to(i).emit('update', packet);
+				//}
 			}
 			lastUpdateTime = currentTime;
 			gameLoopRunning = false;
+			let time2 = Date.now() - time;
+			//console.log("Complete game loop, elapsed time: "+time2);
 		})();
 	}
 }, 1000 / gamespeed);
