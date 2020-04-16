@@ -53,7 +53,20 @@ module.exports = class Player{
 
 		this.gamemessage = "";
 
-		if(playerAction === "E"){
+		if(playerAction === "moving"){
+			this.movement = data;
+			this.action = "moving"
+		}else if(playerAction === "stop moving"){
+			this.movement = {
+				left: false,
+				right: false,
+				up: false,
+				down: false
+			};
+			this.action = "";
+		}else if(playerAction === "stop"){
+			this.action = "";
+		}else if(playerAction === "E"){
 			this.actions(map, vendObj, treesObj, client);
 		}else if(playerAction === "drop item"){
 			this.dropItem(data, droppedItemObj)
@@ -463,18 +476,20 @@ module.exports = class Player{
 			different = true;
 		}
 		if(xcheck || ycheck || facingcheck || actioncheck){
-			clientPub.publish(playerChannel, JSON.stringify({
-				type: "update",
-				unique: this.email,
-				data: {
-					username: this.username,
-					x: this.x,
-					y: this.y,
-					facing: this.facing,
-					moving: false,
-					action: ""
-				}
-			}));
+			(async () => {
+				clientPub.publish(playerChannel, JSON.stringify({
+					type: "update",
+					unique: this.email,
+					data: {
+						username: this.username,
+						x: this.x,
+						y: this.y,
+						facing: this.facing,
+						moving: false,
+						action: ""
+					}
+				}));
+			})();
 		}
 		if(different){
 			(async()=>{
@@ -486,7 +501,7 @@ module.exports = class Player{
 
 	//main player processor, performs function based on user action and returns the data packet.
 	tick(treeObj, calcObj, map, itemObj, timeDifference, mapObj, allOnlinePlayers, 
-		vendObj, droppedItemObj, levelTable, client, clientPub, playerChannel){
+		vendObj, droppedItemObj, levelTable, client, clientPub, playerChannel, socket){
 		//woodcutting
 		if(this.action === "woodcutting"){
 			if(!this.emptySpace()){
@@ -537,12 +552,15 @@ module.exports = class Player{
 		//checks to see if data has changed after tick - writes to database the changes
 		this.rerunSnapShot(client, clientPub, playerChannel);
 		//uses calcpacket functionality to return the data packet to server
-		let temp = this.calcPacket(allOnlinePlayers, map, vendObj, droppedItemObj, levelTable, client);
-		let message = {
-			packet: temp,
-			player: this.toString()
-		}
-		return message;
+		let packet = this.calcPacket(allOnlinePlayers, map, vendObj, droppedItemObj, levelTable, client);
+		(async () => {
+			clientPub.publish(playerChannel, JSON.stringify({
+				type: "individual",
+				socket: socket,
+				data: this.toString()
+			}));
+		})();
+		return packet;
 	}
 
 	getGameMessage(){

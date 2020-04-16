@@ -75,11 +75,15 @@ module.exports = class Vendors{
 				temp.quantity = 1;
 				this.vendors[vendorID].items.push(temp);
 			}
-			clientPub.publish(vendorChannel, JSON.stringify({
-				items: this.vendors[vendorID].items,
-				vendor: vendorID
-			}));
-			client.hset('vendor', vendorID, JSON.stringify(this.vendors[vendorID].items));
+			(async () => {
+				clientPub.publish(vendorChannel, JSON.stringify({
+					items: this.vendors[vendorID].items,
+					vendor: vendorID
+				}));
+			})();
+			(async () => {
+				client.hset('vendor', vendorID, JSON.stringify(this.vendors[vendorID].items));
+			})();
 			return true;
 		}else{
 			return false;
@@ -108,11 +112,15 @@ module.exports = class Vendors{
 					}else{
 						this.vendors[vendorID].items[i].quantity--;
 					}
-					clientPub.publish(vendorChannel, JSON.stringify({
-						items: this.vendors[vendorID].items,
-						vendor: vendorID
-					}));
-					client.hset('vendor', vendorID, JSON.stringify(this.vendors[vendorID].items));
+					(async () => {
+						clientPub.publish(vendorChannel, JSON.stringify({
+							items: this.vendors[vendorID].items,
+							vendor: vendorID
+						}));
+					})();
+					(async () => {
+						client.hset('vendor', vendorID, JSON.stringify(this.vendors[vendorID].items));
+					})();
 					return true;
 				}
 			}
