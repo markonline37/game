@@ -1,3 +1,6 @@
+/*
+	todo - convert this to use pub/sub
+*/
 module.exports = class Trees{
 	constructor(map){
 		this.trees = this.loadTrees(map);

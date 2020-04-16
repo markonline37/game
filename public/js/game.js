@@ -199,6 +199,10 @@ socket.on('failed new user', function(error){
     }
 });
 
+socket.on('test', function(data){
+    console.log(data);
+});
+
 //errors for failed existing user
 socket.on('failed login', function(error){
     var emailError = document.getElementById('returning-player-email-error');
@@ -470,6 +474,9 @@ let timewoodcutting = 0;
 let lastPacket;
 
 socket.on('update', function(data){
+    if(data.message !== "" && data.message !== null && data.message !== undefined){
+        gameMessage(data.message);
+    }
     lastPacket = data;
     if(toggle){
         console.log(data);
@@ -639,13 +646,13 @@ function drawItems(x, y, input){
 
 //pushes messages to buffer with a 4 second pop
 let messageBuffer = [];
-socket.on('Game Message', function(data){
+function gameMessage(data){
     messageBuffer.push(data);
     setTimeout(function(){
         messageBuffer.shift();
         drawScreen(lastPacket);
     }, 4000);
-});
+}
 
 function drawGameMessage(){
     ctx.font = "30px Calibri";

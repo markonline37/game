@@ -1,101 +1,100 @@
 module.exports = class Player{
 	//user can be new user with default values assigned or an existing user with all inputs supplied.
 	//i.e. gold, facing, xp, skills, inventory, bankedItems are all optional.
-	constructor(username, email, password, socket, x, y, charactersize, movespeed, 
-		horizontaldraw, verticaldraw, gold, facing, xp, skills, inventory, bankedItems){
-		this.username = username;
-		this.email = email;
-		this.password = password;
-		this.socket = socket;
-		if(gold === undefined){
-			this.gold = 0;
-		}else{
-			this.gold = gold;
-		}
-		this.x = x;
-		this.y = y;
+	constructor(horizontaldraw, verticaldraw, charactersize, movespeed){
+		this.username;
+		this.email;
+		this.password;
+		this.gold;
+		this.x;
+		this.y;
 		this.horizontaldraw = horizontaldraw;
 		this.verticaldraw = verticaldraw;
 		this.charactersize = charactersize;
 		this.movespeed = movespeed;
-		this.currentlyFishing = false;
-		this.fishingEnvironment = "";
-		if(facing === undefined){
-			this.facing = "S";
-		}else{
-			this.facing = facing;
-		}
-		this.movement = {
-			up: false,
-			down: false,
-			left: false,
-			right: false
-		};
-		if(xp === undefined){
-			this.xp = {
-				fishing: 0,
-				woodcutting: 0
-			};
-		}else{
-			this.xp = xp;
-		}
-		if(skills === undefined){
-			this.skills = {
-				fishing: 0,
-				woodcutting: 0
-			}
-		}else{
-			this.skills = skills;
-		}
-		this.action = "";
-		if(inventory === undefined){
-			this.inventory = {
-				slot1: "",
-				slot2: "",
-				slot3: "",
-				slot4: "",
-				slot5: "",
-				slot6: "",
-				slot7: "",
-				slot8: "",
-				slot9: "",
-				slot10: "",
-				slot11: "",
-				slot12: "",
-				slot13: "",
-				slot14: "",
-				slot15: "",
-				slot16: "",
-				slot17: "",
-				slot18: "",
-				slot19: "",
-				slot20: "",
-				slot21: "",
-				slot22: "",
-				slot23: "",
-				slot24: "",
-				slot25: "",
-				slot26: "",
-				slot27: "",
-				slot28: "",
-				slot29: "",
-				slot30: ""
-			};
-		}else{
-			this.inventory = inventory
-		}
-		this.equippedMainHand = "riverRod";
-		this.maxlevel = 20;
-		if(bankedItems === undefined){
-			this.bankedItems = [];
-		}else{
-			this.bankedItems = bankedItems;
-		}
-		this.snapshot = this.snapShot();
+		this.movement;
+		this.currentlyFishing;
+		this.fishingEnvironment;
+		this.facing;
+		this.xp;
+		this.skills;
+		this.action;
+		this.inventory;
+		this.equippedMainHand;
+		this.maxlevel;
+		this.bankedItems;
+		this.playerAction;
+		this.data;
+		this.gamemessage = "";
 	}
 
-	stop(){
-		this.action = "";
+	reassign(username, email, password, gold, x, y,movement, currentlyFishing, fishingEnvironment, facing, 
+		xp, skills, action, inventory, equippedMainHand, maxlevel, bankedItems, playerAction, data, map, 
+		vendObj, treesObj, client, droppedItemObj, clientPub, vendorChannel, itemsObj){
+		this.username = username;
+		this.email = email;
+		this.password = password;
+		this.gold = gold;
+		this.x = x;
+		this.y = y;
+		this.movement = movement;
+		this.currentlyFishing = currentlyFishing;
+		this.fishingEnvironment = fishingEnvironment;
+		this.facing = facing;
+		this.xp = xp;
+		this.skills = skills;
+		this.action = action;
+		this.inventory = inventory
+		this.equippedMainHand = equippedMainHand;
+		this.maxlevel = maxlevel;
+		this.bankedItems = bankedItems;
+	
+		this.snapshot = this.snapShot();
+
+		this.gamemessage = "";
+
+		if(playerAction === "E"){
+			this.actions(map, vendObj, treesObj, client);
+		}else if(playerAction === "drop item"){
+			this.dropItem(data, droppedItemObj)
+		}else if(playerAction === "swap item"){
+			this.swapItem(data)
+		}else if(playerAction === "clicked"){
+			this.clicked(data, droppedItemObj);
+		}else if(playerAction === "sell item"){
+			this.sellItem(data, vendObj, client, clientPub, vendorChannel);
+		}else if(playerAction === "buy item"){
+			this.buyItem(data, vendObj, itemsObj, client, clientPub, vendorChannel);
+		}else if(playerAction === "bank deposit"){
+			this.bankDeposit(data);
+		}else if(playerAction === "bank withdraw"){
+			this.bankWithdraw(data);
+		}
+	}
+
+	toString(){
+		return {
+			username: this.username,
+			email: this.email,
+			password: this.password,
+			gold: this.gold,
+			x: this.x,
+			y: this.y,
+			movement: this.movement,
+			currentlyFishing: this.currentlyFishing,
+			fishingEnvironment: this.fishingEnvironment,
+			facing: this.facing,
+			xp: this.xp,
+			skills: this.skills,
+			action: this.action,
+			inventory: this.inventory,
+			equippedMainHand: this.equippedMainHand,
+			maxlevel: this.maxlevel,
+			bankedItems: this.bankedItems,
+			playerAction: "",
+			data: "",
+			gamemessage: ""
+		}
 	}
 
 	getEmail(){
@@ -131,17 +130,17 @@ module.exports = class Player{
 					this.bankedItems[this.bankedItems.length-1].quantity = 1;
 					this.inventory["slot"+slot] = "";
 				}
-				return "Deposited item: "+item.name;
+				this.setGameMessage("Deposited item: "+item.name);
 			}
 		}else{
-			return "No room left in bank";
+			this.setGameMessage("No room left in bank");
 		}
 	}
 
 	//withdraw item from bank
 	bankWithdraw(slot){
 		if(!this.emptySpace()){
-			return "Inventory is full";
+			this.setGameMessage("Inventory is full");
 		}else{
 			if(slot < this.bankedItems.length){
 				let temp = this.bankedItems[slot];
@@ -151,7 +150,7 @@ module.exports = class Player{
 				}else{
 					this.bankedItems.splice(slot, 1);
 				}
-				return "Widthdrew item: "+temp.name;
+				this.setGameMessage("Widthdrew item: "+temp.name);
 			}
 		}
 	}
@@ -167,7 +166,7 @@ module.exports = class Player{
 					if(sold){
 						this.gold+=item.price;
 						this.inventory["slot"+slot] = "";
-						return "Sold Item: "+item.name+" for "+item.price+" credits";
+						this.setGameMessage("Sold Item: "+item.name+" for "+item.price+" credits");
 					}
 				}
 			}
@@ -178,7 +177,7 @@ module.exports = class Player{
 	buyItem(itemNumber, vendObj, allItemsObj, client, clientPub, vendorChannel){
 		if(this.action === "shopping"){
 			if(!this.emptySpace()){
-				return "Inventory is full";
+				this.setGameMessage("Inventory is full");
 			}else{
 				if(Number.isInteger(itemNumber)){
 					let temp = this.getTiles();
@@ -188,10 +187,10 @@ module.exports = class Player{
 						if(sold){
 							this.addItem(item);
 							this.gold-=item.price;
-							return "Bought: "+item.name+" for "+item.price+" credits";
+							this.setGameMessage("Bought: "+item.name+" for "+item.price+" credits");
 						}
 					}else{
-						return "Not enough credits";
+						this.setGameMessage("Not enough credits");
 					}
 				}
 			}
@@ -206,7 +205,7 @@ module.exports = class Player{
 	//pickup dropped item
 	clicked(data, droppedItemObj){
 		if(!this.emptySpace()){
-			return "Inventory is full";
+			this.setGameMessage("Inventory is full");
 		}else{
 			let item = droppedItemObj.pickupItem(data, this.x, this.y, this.email);
 			if(item !== false && item !== undefined && item !== null){
@@ -233,13 +232,13 @@ module.exports = class Player{
 			droppedItemObj.dropItem(this.x, this.y, temp, this.email);
 			this.inventory["slot"+slot] = "";
 			if(temp !== undefined){
-				return 'Dropped item: '+temp.name;
+				this.setGameMessage('Dropped item: '+temp.name);
 			}
 		}
 	}
 
 	//adds supplied xp to appropriate skill, also checks for level up.
-	addXP(skill, xp, io, socket, levelTable){
+	addXP(skill, xp, levelTable){
 		//apply xp
 		this.xp[skill]+=xp;
 		//check for level up
@@ -247,8 +246,7 @@ module.exports = class Player{
 			if(levelTable[this.skills[skill]+1]<=this.xp[skill]){
 				//level up
 				this.skills[skill]++;
-				let temp = 'You leveled up in '+skill+' to level '+this.skills[skill];
-				io.to(socket).emit('Game Message', temp);
+				this.setGameMessage('You leveled up in '+skill+' to level '+this.skills[skill]);
 			}
 		}
 	}
@@ -301,14 +299,14 @@ module.exports = class Player{
 		//fishing
 		if(tile >= 300 && tile <= 398){
 			if(!this.emptySpace()){
-				return "Inventory is full";
+				this.setGameMessage("Inventory is full");
 			}else if(!this.checkFishingEquipment()){
-				return "No fishing equipment in main hand";
+				this.setGameMessage("No fishing equipment in main hand");
 			}else{
 				if(this.equippedMainHand !== "oceanRod" && (tile>=304&&tile<=350)){
-					return "Wrong fishing equipment for this environment";
+					this.setGameMessage("Wrong fishing equipment for this environment");
 				}else if(this.equippedMainHand !== "riverRod" && (tile>=352&&tile<=398)){
-					return "Wrong fishing equipment for this environment";
+					this.setGameMessage("Wrong fishing equipment for this environment");
 				}else{
 					this.action = "fishing";
 					return true;
@@ -487,27 +485,26 @@ module.exports = class Player{
 	}
 
 	//main player processor, performs function based on user action and returns the data packet.
-	tick(io, socket, treeObj, calcObj, map, itemObj, timeDifference, mapObj, 
-		allOnlinePlayers, vendObj, droppedItemObj, levelTable, client, clientPub, playerChannel){
-		let time = Date.now();
+	tick(treeObj, calcObj, map, itemObj, timeDifference, mapObj, allOnlinePlayers, 
+		vendObj, droppedItemObj, levelTable, client, clientPub, playerChannel){
 		//woodcutting
 		if(this.action === "woodcutting"){
 			if(!this.emptySpace()){
 				this.action = "";
-				io.to(socket).emit('Game Message', "Inventory is full");
+				this.setGameMessage("Inventory is full");
 			}else{
 				let temp = this.getTiles(map);
 				//update iron when equipment is added, update [] with % reduction gear
 				let loot = treeObj.chopTree(this.email, temp.tilex, temp.tiley, "iron", map, []);
 				if(typeof loot === 'string' || loot instanceof String){
 					this.action = "";
-					io.to(socket).emit('Game Message', loot);
+					this.gamemessage =  loot;
 				}else if(loot !== undefined){
 					this.action = "";
 					let item = itemObj.findItem(loot);
 					this.addItem(item);
-					this.addXP('woodcutting', item.xp, io, socket, levelTable);
-					io.to(socket).emit('Game Message', "You felled a tree and received a : "+item.name);
+					this.addXP('woodcutting', item.xp, levelTable);
+					this.setGameMessage("You felled a tree and received a : "+item.name);
 				}
 			}
 		}
@@ -515,24 +512,21 @@ module.exports = class Player{
 		else if(this.action === "fishing"){
 			if(!this.emptySpace()){
 				this.action = "";
-				io.to(socket).emit('Game Message', "Inventory is full");
+				this.setGameMessage("Inventory is full");
 			}else{
-				if(!this.currentlyFishing){
-					this.currentlyFishing = true;
-					let timer = Math.floor(Math.random() * 7000)+2000;
-					setTimeout(function(){
-						if(this.action === "fishing"){
-							let fish = calcObj.calcFishingLoot(this.skills.fishing);
-							this.addItem(fish);
-							if(fish.type === "fish"){
-								this.addXP('fishing', fish.xp, io, socket, levelTable);
-							}
-							this.currentlyFishing = false;
-							io.to(socket).emit('Game Message', "Caught: "+fish.name);
-						}else{
-							this.currentlyFishing = false;
+				this.currentlyFishing = true;
+				if(Math.floor(Math.random() * 120) === 1){
+					if(this.action === "fishing"){
+						let fish = calcObj.calcFishingLoot(this.skills.fishing);
+						this.addItem(fish);
+						if(fish.type === "fish"){
+							this.addXP('fishing', fish.xp, levelTable);
 						}
-					}.bind(this), timer);
+						this.currentlyFishing = false;
+						this.setGameMessage("Caught: "+fish.name);
+					}else{
+						this.currentlyFishing = false;
+					}
 				}
 			}
 		}
@@ -540,66 +534,32 @@ module.exports = class Player{
 		else if(this.action === "moving"){
 			this.calcMovement(map, timeDifference, mapObj);
 		}
-		let time2 = Date.now() - time;
-		if(this.email === "markonline37@gmail.com"){
-			//console.log("Process 1 (actions), elapsed time: "+time2);
-		}
-		let time3 = Date.now();
 		//checks to see if data has changed after tick - writes to database the changes
 		this.rerunSnapShot(client, clientPub, playerChannel);
-		let time4 = Date.now() - time3;
-		if(this.email === "markonline37@gmail.com"){
-			//console.log("Process 2 (snapshot), elapsed time: "+time4);
-		}
 		//uses calcpacket functionality to return the data packet to server
 		let temp = this.calcPacket(allOnlinePlayers, map, vendObj, droppedItemObj, levelTable, client);
-		let time5 = Date.now() - time;
-		if(this.email === "markonline37@gmail.com"){
-			//console.log("Process 6 (packet complete), elapsed time: "+time5);
+		let message = {
+			packet: temp,
+			player: this.toString()
 		}
-		return temp;
+		return message;
 	}
 
-	/*
-	//used by calcpacket to calculate the world map based on view and players coordinates
-	calcPlayerMap(map){
-		let time1 = Date.now();
-		let returnObj = {};
-		let xmin = Math.floor(this.x) - this.horizontaldraw/2;
-		let xmax = Math.floor(this.x) + this.horizontaldraw/2;
-		let ymin = Math.floor(this.y) - this.verticaldraw/2;
-		let ymax = Math.floor(this.y) + this.verticaldraw/2;
-
-		let maparr = ["layer0", "layer00", "layer1", "layer2", "layer3", "layer4"];
-
-		for(let l = 0, k = maparr.length; l < k; l++){
-			let calcarr = [];
-			for(let j = ymin; j < ymax; j++){
-				let temparr = [];
-				for(let i = xmin; i < xmax; i++){
-					if(i < 0 || i > map.width-1 || j < 0 || j > map.height-1){
-						temparr.push(0);
-					}else{
-						temparr.push(map.layers[maparr[l]][j][i]);
-					}
-				}
-				calcarr.push(temparr);
-			}
-			returnObj[maparr[l]] = calcarr;
+	getGameMessage(){
+		if(this.gamemessage === ""){
+			return null;
 		}
-		let time2 = Date.now()-time1;
-		if(this.email === "markonline37@gmail.com"){
-			//console.log("Process 5 (player map), elapsed time: "+time2);
-		}
-		return returnObj;
+		return this.gamemessage;
 	}
-	*/
+
+	setGameMessage(input){
+		this.gamemessage = input;
+	}
 
 	//calculates the data packet for player (everything that is sent to client)
 	calcPacket(allOnlinePlayers, map, vendObj, droppedItemObj, levelTable, client){
 		//other players in visual range of current player
 		let active = [];
-		let time1 = Date.now();
 		for(let i in allOnlinePlayers){
 			if(i !== this.email){
 				let isInHoriRange = false;
@@ -635,11 +595,6 @@ module.exports = class Player{
 				}
 			}
 		}
-		let time2 = Date.now() - time1;
-		if(this.email === "markonline37@gmail.com"){
-			//console.log("Process 3 (other players), elapsed time: "+time2);
-		}
-		let time3 = Date.now();
 		//vendor & vendor items
 		let vendor = {};
 		vendor.showVendor = false;
@@ -655,10 +610,6 @@ module.exports = class Player{
 		if(this.action === "banking"){
 			banker.showBanker = true;
 			banker.bankerItems = this.bankedItems;
-		}
-		let time4 = Date.now()-time3;
-		if(this.email === "markonline37@gmail.com"){
-			//console.log("Process 4 (vendors and bankers), elapsed time: "+time4);
 		}
 		let ismoving = false;
 		if(this.action === "moving"){
@@ -686,7 +637,8 @@ module.exports = class Player{
 			},
 			active,
 			vendor,
-			banker
+			banker,
+			message: this.getGameMessage()
 		}
 		return player;
 	}
@@ -744,6 +696,7 @@ module.exports = class Player{
 				movement = "S";
 			}
 		}
+
 		//works by checking the x/y of where the user is going to be and checks if it is 0 in the collision layer
 		//anything other than 0 is not walkable.
 		//also uses teleport functionality to check for doors(teleports to inside)
