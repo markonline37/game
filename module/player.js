@@ -54,7 +54,7 @@ module.exports = class Player{
 		this.gamemessage = "";
 
 		if(playerAction === "moving"){
-			this.movement = data;
+			this.movement = JSON.parse(data);
 			this.action = "moving"
 		}else if(playerAction === "stop moving"){
 			this.movement = {
@@ -69,19 +69,19 @@ module.exports = class Player{
 		}else if(playerAction === "E"){
 			this.actions(map, vendObj, treesObj, client);
 		}else if(playerAction === "drop item"){
-			this.dropItem(data, droppedItemObj)
+			this.dropItem(JSON.parse(data), droppedItemObj)
 		}else if(playerAction === "swap item"){
-			this.swapItem(data)
+			this.swapItem(JSON.parse(data));
 		}else if(playerAction === "clicked"){
-			this.clicked(data, droppedItemObj);
+			this.clicked(JSON.parse(data), droppedItemObj);
 		}else if(playerAction === "sell item"){
-			this.sellItem(data, vendObj, client, clientPub, vendorChannel);
+			this.sellItem(JSON.parse(data), vendObj, client, clientPub, vendorChannel);
 		}else if(playerAction === "buy item"){
-			this.buyItem(data, vendObj, itemsObj, client, clientPub, vendorChannel);
+			this.buyItem(JSON.parse(data), vendObj, itemsObj, client, clientPub, vendorChannel);
 		}else if(playerAction === "bank deposit"){
-			this.bankDeposit(data);
+			this.bankDeposit(JSON.parse(data));
 		}else if(playerAction === "bank withdraw"){
-			this.bankWithdraw(data);
+			this.bankWithdraw(JSON.parse(data));
 		}
 	}
 
@@ -476,7 +476,7 @@ module.exports = class Player{
 			different = true;
 		}
 		if(xcheck || ycheck || facingcheck || actioncheck){
-			(async () => {
+			/*(async () => {
 				clientPub.publish(playerChannel, JSON.stringify({
 					type: "update",
 					unique: this.email,
@@ -489,7 +489,7 @@ module.exports = class Player{
 						action: ""
 					}
 				}));
-			})();
+			})();*/
 		}
 		if(different){
 			(async()=>{
@@ -550,16 +550,26 @@ module.exports = class Player{
 			this.calcMovement(map, timeDifference, mapObj);
 		}
 		//checks to see if data has changed after tick - writes to database the changes
-		this.rerunSnapShot(client, clientPub, playerChannel);
+		//this.rerunSnapShot(client, clientPub, playerChannel);
 		//uses calcpacket functionality to return the data packet to server
 		let packet = this.calcPacket(allOnlinePlayers, map, vendObj, droppedItemObj, levelTable, client);
-		(async () => {
-			clientPub.publish(playerChannel, JSON.stringify({
-				type: "individual",
-				socket: socket,
-				data: this.toString()
-			}));
-		})();
+		client.hmset(this.email, {
+			'gold': this.gold,
+			'x': this.x,
+			'y': this.y,
+			'movement': JSON.stringify(this.movement),
+			'currentlyFishing': this.currentlyFishing,
+			'fishingEnvironment': this.fishingEnvironment,
+			'facing': this.facing,
+			'xp': JSON.stringify(this.xp),
+			'skills': JSON.stringify(this.skills),
+			'action': this.action,
+			'inventory': JSON.stringify(this.inventory),
+			'equippedMainHand': this.equippedMainHand,
+			'bankedItems': JSON.stringify(this.bankedItems),
+			'playerAction': "",
+			'data': ""
+		});
 		return packet;
 	}
 
@@ -578,7 +588,7 @@ module.exports = class Player{
 	calcPacket(allOnlinePlayers, map, vendObj, droppedItemObj, levelTable, client){
 		//other players in visual range of current player
 		let active = [];
-		for(let i in allOnlinePlayers){
+		/*for(let i in allOnlinePlayers){
 			if(i !== this.email){
 				let isInHoriRange = false;
 				let isInVertRange = false;
@@ -612,7 +622,7 @@ module.exports = class Player{
 					active.push(temp);
 				}
 			}
-		}
+		}*/
 		//vendor & vendor items
 		let vendor = {};
 		vendor.showVendor = false;

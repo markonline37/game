@@ -133,50 +133,34 @@ if(cluster.isMaster){
 				let testEmail = testAccountCount+"@madeupemail.com";
 				let testUsername = testNames[Math.floor(Math.random() * testNames.length)]+testAccountCount;
 				let testPassword = "abcd1234";
+
 				(async () => {
-					clientPub.publish(playerChannel, JSON.stringify({
-						type: "update",
-						unique: testEmail,
-						data: {
-							username: testUsername,
-							x: startPosX,
-							y: startPosY,
-							facing: "S",
-							moving: false,
-							action: ""
-						}
-					}));
-				})();
-				(async () => {
-					clientPub.publish(playerChannel, JSON.stringify({
-						type: "individual",
-						socket: socket.id,
-						data: {
-							username: testUsername,
-							email: testEmail,
-							password: testPassword,
-							gold: startGold,
-							x: startPosX,
-							y: startPosY,
-							movement: {
-								left: false,
-								right: false,
-								up: false,
-								down: false
-							},
-							currentlyFishing: false,
-							fishingEnvironment: "fresh",
-							facing: "S",
-							xp: {
-								fishing: 0,
-								woodcutting: 0
-							},
-							skills: {
-								fishing: 0,
-								woodcutting: 0
-							},
-							action: "",
-							inventory: {
+					client.hmset(testEmail, {
+						'username': testUsername,
+						'email': testEmail,
+						'password': testPassword,
+						'gold': startGold,
+						'x': startPosX,
+						'y': startPosY,
+						'movement': JSON.stringify({
+							left: false,
+							right: false,
+							up: false,
+							down: false
+						}),
+						'currentlyFishing': false,
+						'fishingEnvironment': 'fresh',
+						'facing': 'S',
+						'xp': JSON.stringify({
+							fishing: 0,
+							woodcutting: 0
+						}),
+						'skills': JSON.stringify({
+							fishing: 0,
+							woodcutting: 0
+						}),
+						'action': '',
+						'inventory': JSON.stringify({
 								slot1: "",
 								slot2: "",
 								slot3: "",
@@ -207,15 +191,15 @@ if(cluster.isMaster){
 								slot28: "",
 								slot29: "",
 								slot30: ""
-							},
-							equippedMainHand: "riverRod",
-							maxlevel: 20,
-							bankedItems: [],
-							playerAction: "",
-							data: ""
-						}
-					}));
+							}),
+						'equippedMainHand': 'riverRod',
+						'maxLevel': 20,
+						'bankedItems': JSON.stringify([]),
+						'playerAction': '',
+						'data': ''
+					});
 				})();
+				
 				allOnlinePlayers[testEmail] = testUsername;
 				onlinePlayers[socket.id] = testEmail;
 				io.to(socket.id).emit('success', map);
@@ -257,89 +241,7 @@ if(cluster.isMaster){
 					//inserts new client into database
 					
 					//adds a simpler object with only the minimum options to allOnlinePlayers
-					(async () => {	
-						clientPub.publish(playerChannel, JSON.stringify({
-							type: "update",
-							unique: data.email.toLowerCase(),
-							data: {
-								username: data.username,
-								x: startPosX,
-								y: startPosY,
-								facing: "S",
-								moving: false,
-								action: ""
-							}
-						}));
-					})();
-					(async () => {
-						clientPub.publish(playerChannel, JSON.stringify({
-							type: "individual",
-							socket: socket.id,
-							data: {
-								username: data.username,
-								email: data.email.toLowerCase(),
-								password: hasher.hash(data.password),
-								gold: startGold,
-								x: startPosX,
-								y: startPosY,
-								movement: {
-									left: false,
-									right: false,
-									up: false,
-									down: false
-								},
-								currentlyFishing: false,
-								fishingEnvironment: "fresh",
-								facing: "S",
-								xp: {
-									fishing: 0,
-									woodcutting: 0
-								},
-								skills: {
-									fishing: 0,
-									woodcutting: 0
-								},
-								action: "",
-								inventory: {
-									slot1: "",
-									slot2: "",
-									slot3: "",
-									slot4: "",
-									slot5: "",
-									slot6: "",
-									slot7: "",
-									slot8: "",
-									slot9: "",
-									slot10: "",
-									slot11: "",
-									slot12: "",
-									slot13: "",
-									slot14: "",
-									slot15: "",
-									slot16: "",
-									slot17: "",
-									slot18: "",
-									slot19: "",
-									slot20: "",
-									slot21: "",
-									slot22: "",
-									slot23: "",
-									slot24: "",
-									slot25: "",
-									slot26: "",
-									slot27: "",
-									slot28: "",
-									slot29: "",
-									slot30: ""
-								},
-								equippedMainHand: "riverRod",
-								maxlevel: 20,
-								bankedItems: [],
-								playerAction: "",
-								data: ""
-							}
-						}));
-					})();
+					
 					(async () => {
 						client.hmset(data.email.toLowerCase(), {
 							'username': data.username,
@@ -355,8 +257,8 @@ if(cluster.isMaster){
 								down: false
 							}),
 							'currentlyFishing': false,
-							'fishingEnvironment': "fresh",
-							'facing': "S",
+							'fishingEnvironment': 'fresh',
+							'facing': 'S',
 							'xp': JSON.stringify({
 								fishing: 0,
 								woodcutting: 0
@@ -398,11 +300,11 @@ if(cluster.isMaster){
 									slot29: "",
 									slot30: ""
 								}),
-							'equippedMainHand': "riverRod",
+							'equippedMainHand': 'riverRod',
 							'maxLevel': 20,
 							'bankedItems': JSON.stringify([]),
-							'playerAction': "",
-							'data': ""
+							'playerAction': '',
+							'data': ''
 						});
 					})();
 					allOnlinePlayers[data.email.toLowerCase()] = data.username;
@@ -447,52 +349,11 @@ if(cluster.isMaster){
 					}
 					if(!errors){
 						client.hgetall(data.email.toLowerCase(), function(err, hash){
-							(async () => {
-								clientPub.publish(playerChannel, JSON.stringify({
-									type: "update",
-									unique: data.email.toLowerCase(),
-									data: {
-										username: hash.username,
-										x: parseFloat(hash.x),
-										y: parseFloat(hash.y),
-										facing: hash.facing,
-										moving: false,
-										action: ""
-									}
-								}));
-							})();
-							(async () => {
-								clientPub.publish(playerChannel, JSON.stringify({
-									type: "individual",
-									socket: socket.id,
-									data: {
-										username: hash.username,
-										email: hash.email,
-										password: hash.password,
-										gold: parseInt(hash.gold),
-										x: parseFloat(hash.x),
-										y: parseFloat(hash.y),
-										movement: {
-											left: false,
-											right: false,
-											up: false,
-											down: false
-										},
-										currentlyFishing: false,
-										fishingEnvironment: "fresh",
-										facing: hash.facing,
-										xp: JSON.parse(hash.xp),
-										skills: JSON.parse(hash.skills),
-										action: "",
-										inventory: JSON.parse(hash.inventory),
-										equippedMainHand: "riverRod",
-										maxlevel: 20,
-										bankedItems: JSON.parse(hash.bankedItems),
-										playerAction: "",
-										data: ""
-									}	
-								}));
-							})();
+							client.hmset(data.email.toLowerCase(), {
+								'playerAction': '',
+								'data': '',
+								'action': ''
+							})							
 							allOnlinePlayers[data.email.toLowerCase()] = hash.username;
 							onlinePlayers[socket.id] = data.email.toLowerCase();
 							console.log('Player Joined: '+data.email.toLowerCase());
@@ -509,13 +370,6 @@ if(cluster.isMaster){
 		socket.on('disconnect', function(){
 			let player = findPlayer(socket.id);
 			if(player !== false){
-				(async () => {
-					clientPub.publish(playerChannel, JSON.stringify({
-						type: "disconnect",
-						unique: player,
-						socket: socket.id
-					}));
-				})();
 				console.log('Player Disconnected: '+onlinePlayers[socket.id]);
 				delete allOnlinePlayers[player];
 				delete onlinePlayers[socket.id];
@@ -528,21 +382,17 @@ if(cluster.isMaster){
 			if(player !== false){
 				if(data.left === true || data.right === true || data.up === true || data.down === true){
 					(async () => {
-						clientPub.publish(playerChannel, JSON.stringify({
-							type: "update action",
-							socket: socket.id,
-							action: "moving",
-							data: data
-						}));
+						client.hmset(player, {
+							'data': JSON.stringify(data),
+							'playerAction': 'moving'
+						});
 					})();
 				}else{
 					(async () => {
-						clientPub.publish(playerChannel, JSON.stringify({
-							type: "update action",
-							socket: socket.id,
-							action: "stop moving",
-							data: ""
-						}));
+						client.hmset(player, {
+							'playerAction': "stop moving",
+							'data': ""
+						});
 					})();
 				}
 			}
@@ -553,12 +403,10 @@ if(cluster.isMaster){
 			let player = findPlayer(socket.id);
 			if(player !== false){
 				(async () => {
-					clientPub.publish(playerChannel, JSON.stringify({
-						type: "update action",
-						socket: socket.id,
-						action: "E",
-						data: ""
-					}));
+					client.hmset(player, {
+						'data': "",
+						'playerAction': 'E'
+					});
 				})();
 			}
 		});
@@ -568,12 +416,10 @@ if(cluster.isMaster){
 			let player = findPlayer(socket.id);
 			if(player !== false){
 				(async () => {
-					clientPub.publish(playerChannel, JSON.stringify({
-						type: "update action",
-						socket: socket.id,
-						action: "drop item",
-						data: data
-					}));
+					client.hmset(player, {
+						'data': JSON.stringify(data),
+						'playerAction': 'drop item'
+					});
 				})();
 			}
 		});
@@ -583,12 +429,10 @@ if(cluster.isMaster){
 			let player = findPlayer(socket.id);
 			if(player !== false){
 				(async () => {
-					clientPub.publish(playerChannel, JSON.stringify({
-						type: "update action",
-						socket: socket.id,
-						action: "swap item",
-						data: data
-					}));
+					client.hmset(player, {
+						'data': JSON.stringify(data),
+						'playerAction': 'swap item'
+					});
 				})();
 			}
 		});
@@ -598,12 +442,10 @@ if(cluster.isMaster){
 			let player = findPlayer(socket.id);
 			if(player !== false){
 				(async () => {
-					clientPub.publish(playerChannel, JSON.stringify({
-						type: "update action",
-						socket: socket.id,
-						action: "clicked",
-						data: data
-					}));
+					client.hmset(player, {
+						'data': JSON.stringify(data),
+						'playerAction': 'clicked'
+					});
 				})();
 			}
 		});
@@ -613,12 +455,10 @@ if(cluster.isMaster){
 			let player = findPlayer(socket.id);
 			if(player !== false){
 				(async () => {
-					clientPub.publish(playerChannel, JSON.stringify({
-						type: "update action",
-						socket: socket.id,
-						action: "sell item",
-						data: data
-					}));
+					client.hmset(player, {
+						'data': JSON.stringify(data),
+						'playerAction': 'sell item'
+					});
 				})();
 			}
 		});
@@ -628,12 +468,10 @@ if(cluster.isMaster){
 			let player = findPlayer(socket.id);
 			if(player !== false){
 				(async () => {
-					clientPub.publish(playerChannel, JSON.stringify({
-						type: "update action",
-						socket: socket.id,
-						action: "buy item",
-						data: data
-					}));
+					client.hmset(player, {
+						'data': JSON.stringify(data),
+						'playerAction': 'buy item'
+					});
 				})();
 			}
 		});
@@ -643,12 +481,10 @@ if(cluster.isMaster){
 			let player = findPlayer(socket.id);
 			if(player !== false){
 				(async () => {
-					clientPub.publish(playerChannel, JSON.stringify({
-						type: "update action",
-						socket: socket.id,
-						action: "stop",
-						data: ""
-					}));
+					client.hmset(player, {
+						'data': "",
+						'playerAction': 'stop'
+					});
 				})();
 			}
 		});
@@ -658,12 +494,10 @@ if(cluster.isMaster){
 			let player = findPlayer(socket.id);
 			if(player !== false){
 				(async () => {
-					clientPub.publish(playerChannel, JSON.stringify({
-						type: "update action",
-						socket: socket.id,
-						action: "bank deposit",
-						data: data
-					}));
+					client.hmset(player, {
+						'data': JSON.stringify(data),
+						'playerAction': 'bank deposit'
+					});
 				})();
 			}
 		});
@@ -673,12 +507,10 @@ if(cluster.isMaster){
 			let player = findPlayer(socket.id);
 			if(player !== false){
 				(async () => {
-					clientPub.publish(playerChannel, JSON.stringify({
-						type: "update action",
-						socket: socket.id,
-						action: "bank withdraw",
-						data: data
-					}));
+					client.hmset(player, {
+						'data': JSON.stringify(data),
+						'playerAction': 'bank withdraw'
+					});
 				})();
 			}
 		});
@@ -695,6 +527,7 @@ if(cluster.isMaster){
 			workers[workerIncrement].send(JSON.stringify({
 				type: "process player",
 				socket: i,
+				unique: onlinePlayers[i],
 				timeDifference: timeDifference
 			}));
 			/*workerIncrement++;
@@ -787,7 +620,9 @@ if(cluster.isMaster){
 		}
 	});
 	clientPlayerSub.on('message', (playerChannel, message) => {
+
 		let data = JSON.parse(message);
+		//console.log("ding - worker "+cluster.worker.id+ ": "+data.type+ ", "+data.socket);
 		if(data.type === "disconnect"){
 			delete allOnlinePlayers[data.unique];
 			delete onlinePlayers[data.socket];
@@ -835,15 +670,18 @@ if(cluster.isMaster){
 		if(data.type === "load vendors"){
 			vendObj = new Vendors(fs, data.vendorhash);
 		}else if(data.type === "process player"){
-			processPlayer(onlinePlayers[data.socket], data.socket, data.timeDifference);
+			processPlayer(data.unique, data.socket, data.timeDifference);
 		}
 	});
 
-	function processPlayer(p, socket, timeDifference){
-		if(socket in onlinePlayers){
-			player.reassign(p.username, p.email, p.password, p.gold, p.x, p.y, p.movement, p.currentlyFishing, 
-				p.fishingEnvironment, p.facing, p.xp, p.skills, p.action, p.inventory, p.equippedMainHand, 
-				p.maxlevel, p.bankedItems, p.playerAction, p.data, map, vendObj, treesObj, client, droppedItemsObj, 
+	function processPlayer(email, socket, timeDifference){
+		client.hgetall(email, function(err, p){
+			if(err !== null){
+				console.log(err);
+			}
+			player.reassign(p.username, p.email, p.password, p.gold, parseFloat(p.x), parseFloat(p.y), JSON.parse(p.movement), p.currentlyFishing, 
+				p.fishingEnvironment, p.facing, JSON.parse(p.xp), JSON.parse(p.skills), p.action, JSON.parse(p.inventory), p.equippedMainHand, 
+				parseInt(p.maxlevel), JSON.parse(p.bankedItems), p.playerAction, p.data, map, vendObj, treesObj, client, droppedItemsObj, 
 				clientPub, vendorChannel, itemsObj);
 
 			let data = player.tick(treesObj, calcObj, map, itemsObj, timeDifference, mapObj, allOnlinePlayers, 
@@ -857,7 +695,7 @@ if(cluster.isMaster){
 				socket: socket,
 				id: id
 			}));
-		}
+		});
 	}
 
 	function gen(){
