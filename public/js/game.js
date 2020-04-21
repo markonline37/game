@@ -473,7 +473,8 @@ let isWoodcutting = false;
 let timewoodcutting = 0;
 let lastPacket;
 
-socket.on('update', function(data){
+socket.on('update', function(message){
+    let data = JSON.parse(message);
     if(data.message !== "" && data.message !== null && data.message !== undefined){
         gameMessage(data.message);
     }

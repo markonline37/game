@@ -1,8 +1,8 @@
 const testingEnabled = true;
 
 const cluster = require('cluster');	
-const numCPUs = require('os').cpus().length;
-//const numCPUs = 1;
+//const numCPUs = require('os').cpus().length; //number or workers = CPU threads
+const numCPUs = 1; //1 worker
 
 const charactersize = 32;
 const movespeed = 0.01;
@@ -66,9 +66,11 @@ if(cluster.isMaster){
 		worker.on('message', function(message){
 			let data = JSON.parse(message);
 			if(data.type === "packet"){
-				io.to(data.socket).emit('update', data.packet);
+				client.get(data.id, (err, reply) => {
+					io.to(data.socket).emit('update', reply);
+				});
 			}
-		})
+		});
 		workers.push(worker);
 	}
 
@@ -766,6 +768,7 @@ if(cluster.isMaster){
 	const clientVendorSub = new ioredis();
 	const clientPlayerSub = new ioredis();
 	const clientPub = new ioredis();
+	const workerChannel = 'worker channel';
 	//vendor sub --------------------------------------------------------
 	const vendorChannel = 'vendorChannel';
 	clientVendorSub.subscribe(vendorChannel, (error, result) => {
@@ -826,7 +829,8 @@ if(cluster.isMaster){
 		console.log("Worker #"+cluster.worker.id+" Ready");
 	})();
 
-	process.on('message', function(msg){
+	process.on('message', function(msg, socket){
+		
 		let data = JSON.parse(msg);
 		if(data.type === "load vendors"){
 			vendObj = new Vendors(fs, data.vendorhash);
@@ -844,11 +848,26 @@ if(cluster.isMaster){
 
 			let data = player.tick(treesObj, calcObj, map, itemsObj, timeDifference, mapObj, allOnlinePlayers, 
 				vendObj, droppedItemsObj, levelTable, client, clientPub, playerChannel, socket);
+			
+			let id = gen();
+			let temp = JSON.stringify(data);
+			client.set(id, temp);
 			process.send(JSON.stringify({
 				type: "packet",
 				socket: socket,
-				packet: data
+				id: id
 			}));
 		}
+	}
+
+	function gen(){
+		let length = 16;
+		let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+		let charactersLength = characters.length;
+		let result = "";
+		for(let i = 0; i < length; i++){
+			result+=characters.charAt(Math.floor(Math.random()*charactersLength));
+		}
+		return result;
 	}
 }
