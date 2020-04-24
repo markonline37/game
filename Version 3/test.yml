@@ -1,0 +1,140 @@
+config:
+  target: "http://localhost:5000/"
+  socketio:
+    transports: ["websocket"]
+  variables:
+    movement:
+      - { up: false, down: false, left: false, right: false }
+      - { up: true, down: false, left: false, right: false }
+      - { up: false, down: true, left: false, right: false }
+      - { up: false, down: false, left: true, right: false }
+      - { up: false, down: false, left: false, right: true }
+      - { up: true, down: true, left: false, right: false }
+      - { up: true, down: false, left: true, right: false }
+      - { up: true, down: false, left: false, right: true }
+      - { up: false, down: true, left: true, right: false }
+      - { up: false, down: true, left: false, right: true }
+      - { up: false, down: false, left: true, right: true }
+  phases:
+    - duration: 50
+      arrivalRate: 1
+scenarios:
+  - name: "Heavy user"
+    engine: "socketio"
+    weight: 10
+    flow:
+      - emit:
+          channel: "new player testing"
+          data: ""
+      - think: 5
+      - emit:
+          channel: "movement"
+          data: { up: false, down: true, left: false, right: true }
+      - think: 2
+      - loop:
+        - emit:
+            channel: "movement"
+            data: { up: false, down: false, left: false, right: true }
+        - think: 1
+        - emit: 
+            channel: "movement"
+            data: { up: false, down: true, left: false, right: false }
+        - think: 1
+        - emit: 
+            channel: "movement"
+            data: { up: false, down: false, left: true, right: false }
+        - think: 1
+        - emit: 
+            channel: "movement"
+            data: { up: true, down: false, left: false, right: false }
+        - think: 1
+  - name: "Medium User"
+    engine: "socketio"
+    weight: 20
+    flow:
+      - emit:
+          channel: "new player testing"
+          data: ""
+      - think: 5
+      - emit:
+          channel: "movement"
+          data: { up: false, down: true, left: false, right: true }
+      - think: 5
+      - loop:
+        - emit:
+            channel: "movement"
+            data: { up: false, down: false, left: false, right: true }
+        - think: 1
+        - emit:
+            channel: "movement"
+            data: { up: false, down: false, left: false, right: false }
+        - think: 5
+        - emit: 
+            channel: "movement"
+            data: { up: false, down: true, left: false, right: false }
+        - think: 1
+        - emit:
+            channel: "movement"
+            data: { up: false, down: false, left: false, right: false }
+        - think: 5
+        - emit: 
+            channel: "movement"
+            data: { up: false, down: false, left: true, right: false }
+        - think: 1
+        - emit:
+            channel: "movement"
+            data: { up: false, down: false, left: false, right: false }
+        - think: 5
+        - emit: 
+            channel: "movement"
+            data: { up: true, down: false, left: false, right: false }
+        - think: 1
+        - emit:
+            channel: "movement"
+            data: { up: false, down: false, left: false, right: false }
+        - think: 5
+  - name: "Light User"
+    engine: "socketio"
+    weight: 70
+    flow:
+      - emit:
+          channel: "new player testing"
+          data: ""
+      - think: 10
+      - emit:
+          channel: "movement"
+          data: { up: false, down: true, left: false, right: true }
+      - think: 10
+      - loop:
+        - emit:
+            channel: "movement"
+            data: { up: false, down: false, left: false, right: true }
+        - think: 1
+        - emit:
+            channel: "movement"
+            data: { up: false, down: false, left: false, right: false }
+        - think: 10
+        - emit: 
+            channel: "movement"
+            data: { up: false, down: true, left: false, right: false }
+        - think: 1
+        - emit:
+            channel: "movement"
+            data: { up: false, down: false, left: false, right: false }
+        - think: 10
+        - emit: 
+            channel: "movement"
+            data: { up: false, down: false, left: true, right: false }
+        - think: 1
+        - emit:
+            channel: "movement"
+            data: { up: false, down: false, left: false, right: false }
+        - think: 10
+        - emit: 
+            channel: "movement"
+            data: { up: true, down: false, left: false, right: false }
+        - think: 1
+        - emit:
+            channel: "movement"
+            data: { up: false, down: false, left: false, right: false }
+        - think: 10

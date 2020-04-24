@@ -1,0 +1,489 @@
+[
+    {
+        "username": "mark",
+        "email": "markonline37@gmail.com",
+        "password": "322c0434f4893e2763a1b54556e0a4ea527a270413c10242dfc1d2ddc24e9ede",
+        "socket": "W6_uBW5YM_7RuctWAAAB",
+        "gold": 15905,
+        "x": 50.32000000000003,
+        "y": 42.420000000000066,
+        "moving": false,
+        "horizontaldraw": 46,
+        "verticaldraw": 40,
+        "charactersize": 32,
+        "movespeed": 0.01,
+        "currentlyFishing": true,
+        "fishingEnvironment": "fresh",
+        "facing": "N",
+        "movement": {
+            "up": false,
+            "down": false,
+            "left": false,
+            "right": false
+        },
+        "xp": {
+            "fishing": 19780,
+            "woodcutting": 810
+        },
+        "skills": {
+            "fishing": 20,
+            "woodcutting": 6
+        },
+        "action": "fishing",
+        "inventory": {
+            "slot1": {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30
+            },
+            "slot2": {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30
+            },
+            "slot3": {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30
+            },
+            "slot4": {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30
+            },
+            "slot5": {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30
+            },
+            "slot6": {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30
+            },
+            "slot7": {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30
+            },
+            "slot8": {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30
+            },
+            "slot9": {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30
+            },
+            "slot10": {
+                "type": "junk",
+                "name": "Rusted can",
+                "item": 4,
+                "price": 2,
+                "quantity": 2
+            },
+            "slot11": {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30
+            },
+            "slot12": {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30
+            },
+            "slot13": {
+                "type": "junk",
+                "name": "Branch",
+                "item": 5,
+                "price": 1
+            },
+            "slot14": {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30
+            },
+            "slot15": {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30
+            },
+            "slot16": {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30
+            },
+            "slot17": {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30
+            },
+            "slot18": "",
+            "slot19": "",
+            "slot20": "",
+            "slot21": "",
+            "slot22": "",
+            "slot23": "",
+            "slot24": "",
+            "slot25": "",
+            "slot26": "",
+            "slot27": "",
+            "slot28": "",
+            "slot29": "",
+            "slot30": ""
+        },
+        "equippedMainHand": "riverRod",
+        "maxlevel": 20,
+        "levelTable": {
+            "1": 100,
+            "2": 210,
+            "3": 332,
+            "4": 468,
+            "5": 622,
+            "6": 798,
+            "7": 1033,
+            "8": 1268,
+            "9": 1542,
+            "10": 1866,
+            "11": 2252,
+            "12": 2715,
+            "13": 3275,
+            "14": 3958,
+            "15": 4799,
+            "16": 5842,
+            "17": 7145,
+            "18": 8787,
+            "19": 10873,
+            "20": 13543
+        },
+        "bankedItems": [
+            {
+                "type": "fish",
+                "minlevel": "15",
+                "maxlevel": "25",
+                "name": "Bass",
+                "xp": 60,
+                "item": 3,
+                "price": 30,
+                "quantity": 12
+            },
+            {
+                "type": "junk",
+                "name": "Old Boot",
+                "item": 6,
+                "price": 2,
+                "quantity": 1
+            },
+            {
+                "type": "junk",
+                "name": "Branch",
+                "item": 5,
+                "price": 1,
+                "quantity": 1
+            },
+            {
+                "type": "log",
+                "name": "Basic Log",
+                "minlevel": 0,
+                "item": 7,
+                "xp": 30,
+                "price": 5,
+                "quantity": 3
+            },
+            {
+                "type": "junk",
+                "name": "Rusted can",
+                "item": 4,
+                "price": 2,
+                "quantity": 1
+            }
+        ]
+    },
+    {
+        "username": "chris",
+        "email": "chris@gmail.com",
+        "password": "322c0434f4893e2763a1b54556e0a4ea527a270413c10242dfc1d2ddc24e9ede",
+        "socket": "jNf4AmKujadgLNfZAAAD",
+        "gold": 801,
+        "x": 47.51500000000008,
+        "y": 42.33500000000006,
+        "moving": false,
+        "horizontaldraw": 46,
+        "verticaldraw": 40,
+        "charactersize": 32,
+        "movespeed": 0.01,
+        "currentlyFishing": true,
+        "fishingEnvironment": "fresh",
+        "facing": "N",
+        "movement": {
+            "up": false,
+            "down": false,
+            "left": false,
+            "right": false
+        },
+        "xp": {
+            "fishing": 2370,
+            "woodcutting": 120
+        },
+        "skills": {
+            "fishing": 11,
+            "woodcutting": 1
+        },
+        "action": "fishing",
+        "inventory": {
+            "slot1": {
+                "type": "junk",
+                "name": "Branch",
+                "item": 5,
+                "price": 1
+            },
+            "slot2": {
+                "type": "fish",
+                "minlevel": "5",
+                "maxlevel": "15",
+                "name": "Salmon",
+                "xp": 40,
+                "item": 1,
+                "price": 15
+            },
+            "slot3": {
+                "type": "fish",
+                "minlevel": "5",
+                "maxlevel": "15",
+                "name": "Salmon",
+                "xp": 40,
+                "item": 1,
+                "price": 15
+            },
+            "slot4": {
+                "type": "fish",
+                "minlevel": "5",
+                "maxlevel": "15",
+                "name": "Salmon",
+                "xp": 40,
+                "item": 1,
+                "price": 15
+            },
+            "slot5": {
+                "type": "junk",
+                "name": "Branch",
+                "item": 5,
+                "price": 1
+            },
+            "slot6": {
+                "type": "junk",
+                "name": "Old Boot",
+                "item": 6,
+                "price": 2,
+                "quantity": 1
+            },
+            "slot7": {
+                "type": "fish",
+                "minlevel": "5",
+                "maxlevel": "15",
+                "name": "Salmon",
+                "xp": 40,
+                "item": 1,
+                "price": 15
+            },
+            "slot8": {
+                "type": "fish",
+                "minlevel": "5",
+                "maxlevel": "15",
+                "name": "Salmon",
+                "xp": 40,
+                "item": 1,
+                "price": 15
+            },
+            "slot9": {
+                "type": "junk",
+                "name": "Old Boot",
+                "item": 6,
+                "price": 2,
+                "quantity": 1
+            },
+            "slot10": {
+                "type": "fish",
+                "minlevel": "5",
+                "maxlevel": "15",
+                "name": "Salmon",
+                "xp": 40,
+                "item": 1,
+                "price": 15
+            },
+            "slot11": {
+                "type": "junk",
+                "name": "Branch",
+                "item": 5,
+                "price": 1
+            },
+            "slot12": {
+                "type": "fish",
+                "minlevel": "5",
+                "maxlevel": "15",
+                "name": "Salmon",
+                "xp": 40,
+                "item": 1,
+                "price": 15
+            },
+            "slot13": {
+                "type": "fish",
+                "minlevel": "5",
+                "maxlevel": "15",
+                "name": "Salmon",
+                "xp": 40,
+                "item": 1,
+                "price": 15
+            },
+            "slot14": {
+                "type": "junk",
+                "name": "Branch",
+                "item": 5,
+                "price": 1
+            },
+            "slot15": {
+                "type": "fish",
+                "minlevel": "10",
+                "maxlevel": "20",
+                "name": "Carp",
+                "xp": 50,
+                "item": 2,
+                "price": 20
+            },
+            "slot16": {
+                "type": "fish",
+                "minlevel": "5",
+                "maxlevel": "15",
+                "name": "Salmon",
+                "xp": 40,
+                "item": 1,
+                "price": 15
+            },
+            "slot17": "",
+            "slot18": "",
+            "slot19": "",
+            "slot20": "",
+            "slot21": "",
+            "slot22": "",
+            "slot23": "",
+            "slot24": "",
+            "slot25": "",
+            "slot26": "",
+            "slot27": "",
+            "slot28": "",
+            "slot29": "",
+            "slot30": ""
+        },
+        "equippedMainHand": "riverRod",
+        "maxlevel": 20,
+        "levelTable": {
+            "1": 100,
+            "2": 210,
+            "3": 332,
+            "4": 468,
+            "5": 622,
+            "6": 798,
+            "7": 1033,
+            "8": 1268,
+            "9": 1542,
+            "10": 1866,
+            "11": 2252,
+            "12": 2715,
+            "13": 3275,
+            "14": 3958,
+            "15": 4799,
+            "16": 5842,
+            "17": 7145,
+            "18": 8787,
+            "19": 10873,
+            "20": 13543
+        },
+        "bankedItems": [
+            {
+                "type": "junk",
+                "name": "Rusted can",
+                "item": 4,
+                "price": 2,
+                "quantity": 2
+            },
+            {
+                "type": "junk",
+                "name": "Old Boot",
+                "item": 6,
+                "price": 2,
+                "quantity": 1
+            },
+            {
+                "type": "fish",
+                "minlevel": "0",
+                "maxlevel": "10",
+                "name": "Brown Trout",
+                "xp": 20,
+                "item": 0,
+                "price": 10,
+                "quantity": 1
+            }
+        ]
+    }
+]

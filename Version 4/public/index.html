@@ -1,0 +1,63 @@
+<html>
+<head>
+    <title>Game</title>
+    <link rel="stylesheet" type="text/css" href="/css/style.css">
+</head>
+<body>
+    <div id="login">
+        <form id="new-player-form">
+            <h1>Create New User</h1>
+            <table class="t1">
+                <tr>
+                    <th>Username:</th>
+                    <th><input type="text" id="new-player-name" placeholder="Enter Username..."></th>
+                    <th><div class="error" id="new-player-name-error"></div></th>
+                </tr>
+                <tr>
+                    <th>Email:</th>
+                    <th><input type="text" id="new-player-email" placeholder="Enter Your Email..."></th>
+                    <th><div class="error" id="new-player-email-error"></div></th>
+                </tr>
+                <tr>
+                    <th>Password:</th>
+                    <th><input type="password" id="new-player-password" placeholder="Enter Your Password..."></th>
+                    <th><div class="error" id="new-player-password-error"></div></th>
+                </tr>
+                <tr>
+                    <th colspan="1.5"><button type="submit">Create New User</button></th>
+                    <th colspan="1.5"><div class="error" id="new-player-error"></div></th>
+                </tr>
+            </table>
+        </form>
+        <form id="returning-player">
+            <h1>Existing User</h1>
+            <table class="t1">
+                <tr>
+                    <th>Email:</th>
+                    <th><input type="text" id="returning-player-email" placeholder="Enter Email..."></th>
+                    <th><div class="error" id="returning-player-email-error"></div></th>
+                </tr>
+                <tr>
+                    <th>Password:</th>
+                    <th><input type="password" id="returning-player-password" placeholder="Enter Your Password..."></th>
+                    <th><div class="error" id="returning-player-password-error"></div></th>
+                </tr>
+                <tr>
+                    <th colspan="1.5"><button type="submit">Login</button></th>
+                    <th colspan="1.5"></th>
+                </tr>
+            </table>
+        </form>
+    </div>
+    <div id="row">
+        <div id="column1">
+            <canvas id="canvas"></canvas>
+        </div>
+        <div id="column2">
+            <canvas id="canvas2"></canvas>
+        </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/game.js"></script>
+</body>
+</html>

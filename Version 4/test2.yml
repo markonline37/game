@@ -1,0 +1,16 @@
+config:
+  target: "http://localhost:5000/"
+  socketio:
+    transports: ["websocket"]
+  phases:
+    - duration: 10000
+      arrivalRate: 5
+scenarios:
+  - engine: "socketio"
+    flow:
+      - emit:
+          channel: "new player testing"
+          data: ""
+      - think: 5
+      - loop:
+        - think: 10
